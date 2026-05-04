@@ -1,0 +1,49 @@
+@layer utilities {
+  .filete-bajo {
+    border-bottom: 1px solid rgb(var(--color-ceniza));
+  }
+
+  .filete-tenue {
+    border-color: rgb(var(--color-ceniza));
+  }
+
+  .titulo-editorial {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .meta-tipografia {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(var(--color-humo));
+  }
+
+  .lamina {
+    background: rgb(var(--color-papel));
+    border: 1px solid rgb(var(--color-ceniza));
+    border-radius: 14px;
+  }
+
+  .lamina-suave {
+    background: rgb(var(--color-papel));
+    border-radius: 10px;
+  }
+
+  .transicion-natural {
+    transition: all var(--duracion-normal) var(--curva-natural);
+  }
+}
+
+@keyframes deslizarEntrar {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

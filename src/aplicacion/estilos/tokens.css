@@ -1,0 +1,32 @@
+:root {
+  --color-lienzo: 250 249 245;
+  --color-papel: 255 255 252;
+  --color-tinta: 23 23 23;
+  --color-grafito: 64 64 64;
+  --color-humo: 115 115 115;
+  --color-ceniza: 230 228 220;
+  --color-oliva: 63 92 52;
+  --color-oliva-suave: 232 236 225;
+  --color-ambar: 180 83 9;
+  --color-cinabrio: 159 18 57;
+
+  --espacio-borde: 1px;
+  --duracion-rapida: 120ms;
+  --duracion-normal: 220ms;
+  --curva-natural: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-lienzo: 18 18 17;
+    --color-papel: 26 26 24;
+    --color-tinta: 245 245 240;
+    --color-grafito: 200 200 195;
+    --color-humo: 145 145 140;
+    --color-ceniza: 50 50 46;
+    --color-oliva: 168 192 138;
+    --color-oliva-suave: 40 50 32;
+    --color-ambar: 234 144 38;
+    --color-cinabrio: 244 114 152;
+  }
+}

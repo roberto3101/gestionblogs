@@ -1,0 +1,59 @@
+@import './tokens.css';
+@import './utilidades.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #raiz {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    background: rgb(var(--color-lienzo));
+    color: rgb(var(--color-tinta));
+    font-family: 'Geist', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgb(var(--color-oliva-suave));
+    color: rgb(var(--color-tinta));
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--color-ceniza));
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--color-humo));
+  }
+
+  button {
+    font-family: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--color-oliva));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
