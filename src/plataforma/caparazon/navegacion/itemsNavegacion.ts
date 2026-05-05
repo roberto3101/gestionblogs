@@ -6,8 +6,8 @@ export interface ItemNavegacion {
 
 // Menu simplificado para el caso de uso real (admin unico, ~5 sitios).
 // Ocultos: Etiquetas (redundante con categorias), Medios (subida directa
-// desde el editor). Roles y Permisos consolidados en una sola pagina de
-// solo lectura; Alcances es la pagina funcional para asignar/revocar accesos.
+// desde el editor). Toda la gestion de gobierno (crear usuario, asignar
+// rol, revocar acceso) vive en /panel/usuarios.
 export const itemsNavegacion: ItemNavegacion[] = [
   { ruta: '/panel', etiqueta: 'Inicio', agrupacion: 'general' },
   { ruta: '/panel/posts', etiqueta: 'Posts', agrupacion: 'redaccion' },
@@ -15,8 +15,7 @@ export const itemsNavegacion: ItemNavegacion[] = [
   { ruta: '/panel/categorias', etiqueta: 'Categorias', agrupacion: 'estructura' },
   { ruta: '/panel/sitios', etiqueta: 'Sitios', agrupacion: 'estructura' },
   { ruta: '/panel/empresas', etiqueta: 'Empresas', agrupacion: 'gobierno' },
-  { ruta: '/panel/roles-permisos', etiqueta: 'Roles y permisos', agrupacion: 'gobierno' },
-  { ruta: '/panel/alcances', etiqueta: 'Alcances', agrupacion: 'gobierno' },
+  { ruta: '/panel/usuarios', etiqueta: 'Usuarios', agrupacion: 'gobierno' },
 ];
 
 export const titulosAgrupacion: Record<ItemNavegacion['agrupacion'], string> = {

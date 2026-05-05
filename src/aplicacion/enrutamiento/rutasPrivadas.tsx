@@ -16,8 +16,7 @@ import { PaginaCrearPost } from '@capacidades/contenido-editorial/paginas/posts/
 import { PaginaDetallePost } from '@capacidades/contenido-editorial/paginas/posts/PaginaDetallePost';
 import { PaginaEditarPost } from '@capacidades/contenido-editorial/paginas/posts/PaginaEditarPost';
 
-import { PaginaRolesPermisos } from '@capacidades/gobierno-acceso/paginas/PaginaRolesPermisos';
-import { PaginaAlcances } from '@capacidades/gobierno-acceso/paginas/PaginaAlcances';
+import { PaginaUsuarios } from '@capacidades/gobierno-acceso/paginas/PaginaUsuarios';
 
 export const rutasPrivadas = (
   <Route
@@ -41,7 +40,6 @@ export const rutasPrivadas = (
     <Route path="posts/nuevo" element={<PaginaCrearPost />} />
     <Route path="posts/:postId" element={<PaginaDetallePost />} />
     <Route path="posts/:postId/editar" element={<PaginaEditarPost />} />
-    <Route path="roles-permisos" element={<PaginaRolesPermisos />} />
-    <Route path="alcances" element={<PaginaAlcances />} />
+    <Route path="usuarios" element={<PaginaUsuarios />} />
   </Route>
 );

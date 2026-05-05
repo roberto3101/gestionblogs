@@ -5,6 +5,7 @@ import { listarPermisos, registrarPermiso } from '../servicios/servicioPermisos'
 import {
   asignarAlcance,
   asignarRolPermiso,
+  crearUsuarioAdmin,
   listarAlcances,
   listarUsuariosAdmin,
   revocarAlcance,
@@ -67,3 +68,15 @@ export const useRevocarAlcance = () => {
 
 export const useListarUsuariosAdmin = (paginacion: Paginacion = paginacionInicial) =>
   useRecursoListado({ clave: CLAVE_USUARIOS, consultar: listarUsuariosAdmin, paginacion });
+
+export const useCrearUsuarioAdmin = () => {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: crearUsuarioAdmin,
+    meta: { exito: 'Usuario creado' },
+    onSuccess: () => {
+      cliente.invalidateQueries({ queryKey: CLAVE_USUARIOS });
+      cliente.invalidateQueries({ queryKey: CLAVE_ALCANCES });
+    },
+  });
+};

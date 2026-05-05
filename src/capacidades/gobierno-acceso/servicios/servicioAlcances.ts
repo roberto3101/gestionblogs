@@ -48,3 +48,13 @@ export const listarUsuariosAdmin = async (paginacion: Paginacion): Promise<Lista
   const crudo = await obtener<unknown>(`/gobierno/usuarios?${aCadenaConsulta(paginacion)}`);
   return normalizarListado<UsuarioAdmin>(crudo);
 };
+
+export interface SolicitudCrearUsuarioAdmin {
+  correo_electronico: string;
+  password: string;
+  empresa_id?: Identificador;
+  rol_id?: Identificador;
+}
+
+export const crearUsuarioAdmin = (solicitud: SolicitudCrearUsuarioAdmin): Promise<UsuarioAdmin> =>
+  enviar<UsuarioAdmin>('/gobierno/usuarios', solicitud);
