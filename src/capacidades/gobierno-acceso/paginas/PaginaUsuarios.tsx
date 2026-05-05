@@ -70,10 +70,11 @@ export const PaginaUsuarios = () => {
   );
 
   const usuariosConAccesos = useMemo<UsuarioConAccesos[]>(() => {
-    if (!usuarios.data || !alcances.data) return [];
+    if (!usuarios.data) return [];
+    const listaAlcances = alcances.data ?? [];
     return usuarios.data.elementos.map((u) => ({
       ...u,
-      asignaciones: alcances.data
+      asignaciones: listaAlcances
         .filter((a) => a.usuario_id === u.id)
         .map((a) => ({ alcanceId: a.id, empresa: a.empresa_nombre, rol: a.rol_nombre })),
     }));
@@ -200,7 +201,7 @@ export const PaginaUsuarios = () => {
 
   const mensajeErrorCrear = creacionUsuario.error instanceof ErrorHttp ? creacionUsuario.error.message : null;
   const mensajeErrorAsignar = asignacion.error instanceof ErrorHttp ? asignacion.error.message : null;
-  const cargandoBase = usuarios.isLoading || alcances.isLoading;
+  const cargandoBase = usuarios.isLoading;
 
   return (
     <div>
