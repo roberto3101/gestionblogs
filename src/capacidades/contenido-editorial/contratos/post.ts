@@ -18,6 +18,8 @@ export interface Post {
   estado: string;
   publicado_en: string | null;
   creado_en: string;
+  categorias?: string[];
+  etiquetas?: string[];
 }
 
 export interface SolicitudCrearPost {

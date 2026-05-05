@@ -13,10 +13,14 @@ import { useSitioActivo } from '@plataforma/contexto/contextoSitioActivo';
 import { useNotificaciones } from '@plataforma/gobierno/errores/contextoNotificaciones';
 import { useCrearPost, usePublicarPost } from '../../ganchos/usePosts';
 import { useListarAutores } from '../../ganchos/useAutores';
+import { useListarCategorias } from '../../ganchos/useCategorias';
+import { useListarEtiquetas } from '../../ganchos/useEtiquetas';
+import { reemplazarCategoriasPost, reemplazarEtiquetasPost } from '../../servicios/servicioEdicion';
 import { useBorradorAutosalvado } from '@compartido/biblioteca/useBorradorAutosalvado';
 import { generarSlug } from '@compartido/utilidades/generarSlug';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
 import { EditorMarkdownDual } from '../../componentes/editor/EditorMarkdownDual';
+import { SelectorMultiple } from '../../componentes/editor/SelectorMultiple';
 import { BannerSitioDestino } from '../../componentes/editor/BannerSitioDestino';
 import { construirUrlPublicaPost } from '@compartido/constantes/sitiosProduccion';
 import type { Identificador } from '@compartido/tipos/identificador';
@@ -33,6 +37,8 @@ interface BorradorPost {
   idioma: string;
   seoTitulo: string;
   seoDescripcion: string;
+  categoriasIds: string[];
+  etiquetasIds: string[];
 }
 
 const borradorVacio: BorradorPost = {
@@ -46,6 +52,8 @@ const borradorVacio: BorradorPost = {
   idioma: 'es',
   seoTitulo: '',
   seoDescripcion: '',
+  categoriasIds: [],
+  etiquetasIds: [],
 };
 
 export const PaginaCrearPost = () => {
@@ -77,9 +85,20 @@ export const PaginaCrearPost = () => {
 
   const consultaAutores = useListarAutores(borrador.sitioCodigo || null);
   const autoresDisponibles = consultaAutores.data?.elementos ?? [];
+  const consultaCategorias = useListarCategorias(borrador.sitioId || null);
+  const categoriasDisponibles = consultaCategorias.data?.elementos ?? [];
+  const consultaEtiquetas = useListarEtiquetas(borrador.sitioId || null);
+  const etiquetasDisponibles = consultaEtiquetas.data?.elementos ?? [];
 
   const cambiarSitio = (id: Identificador, sitio: Sitio | null) => {
-    asignarBorrador((b) => ({ ...b, sitioId: id, sitioCodigo: sitio?.codigo ?? '', autorId: '' }));
+    asignarBorrador((b) => ({
+      ...b,
+      sitioId: id,
+      sitioCodigo: sitio?.codigo ?? '',
+      autorId: '',
+      categoriasIds: [],
+      etiquetasIds: [],
+    }));
   };
 
   const cambiarCampo = <K extends keyof BorradorPost>(campo: K, valor: BorradorPost[K]) => {
@@ -116,6 +135,12 @@ export const PaginaCrearPost = () => {
         seo_titulo: borrador.seoTitulo.trim() || undefined,
         seo_descripcion: borrador.seoDescripcion.trim() || undefined,
       });
+      if (borrador.categoriasIds.length > 0) {
+        try { await reemplazarCategoriasPost(post.id, { categorias_ids: borrador.categoriasIds }); } catch {}
+      }
+      if (borrador.etiquetasIds.length > 0) {
+        try { await reemplazarEtiquetasPost(post.id, { etiquetas_ids: borrador.etiquetasIds }); } catch {}
+      }
       if (publicarTrasGuardar) {
         await publicacion.mutateAsync(post.id);
         const urlPublica = construirUrlPublicaPost(borrador.sitioCodigo, borrador.slug, borrador.idioma);
@@ -253,6 +278,35 @@ export const PaginaCrearPost = () => {
               value={borrador.resumen}
               onChange={(e) => cambiarCampo('resumen', e.target.value)}
               ayuda="2 líneas que aparecen en listados."
+            />
+          </Lamina>
+
+          <Lamina className="p-5 space-y-4">
+            <SelectorMultiple
+              etiqueta="Categorías"
+              opciones={categoriasDisponibles.map((c) => ({ valor: c.id, etiqueta: c.nombre }))}
+              seleccionados={borrador.categoriasIds}
+              alCambiar={(ids) => cambiarCampo('categoriasIds', ids)}
+              marcadorVacio={
+                consultaCategorias.isLoading
+                  ? 'Cargando categorías…'
+                  : borrador.sitioId
+                    ? 'Sin categorías en este sitio. Crea una en /panel/categorias.'
+                    : 'Selecciona un sitio primero.'
+              }
+            />
+            <SelectorMultiple
+              etiqueta="Etiquetas"
+              opciones={etiquetasDisponibles.map((e) => ({ valor: e.id, etiqueta: e.nombre }))}
+              seleccionados={borrador.etiquetasIds}
+              alCambiar={(ids) => cambiarCampo('etiquetasIds', ids)}
+              marcadorVacio={
+                consultaEtiquetas.isLoading
+                  ? 'Cargando etiquetas…'
+                  : borrador.sitioId
+                    ? 'Sin etiquetas en este sitio.'
+                    : 'Selecciona un sitio primero.'
+              }
             />
           </Lamina>
 
