@@ -64,18 +64,18 @@ export const PaginaEditarPost = () => {
     asignarSeoDescripcion(post.seo_descripcion ?? '');
   }, [post]);
 
-  // Mapea slugs (lo que devuelve la API) -> IDs (lo que usa el SelectorMultiple)
+  // Mapea {nombre,slug} (lo que devuelve la API) -> IDs (lo que usa el SelectorMultiple)
   // cuando termina de cargar el listado de categorías/etiquetas del sitio.
   useEffect(() => {
     if (!post?.categorias || !categorias.data) return;
-    const slugs = new Set(post.categorias);
+    const slugs = new Set(post.categorias.map((c) => c.slug));
     const ids = (categorias.data.elementos ?? []).filter((c) => slugs.has(c.slug)).map((c) => c.id);
     asignarCategoriasIds(ids);
   }, [post?.categorias, categorias.data]);
 
   useEffect(() => {
     if (!post?.etiquetas || !etiquetas.data) return;
-    const slugs = new Set(post.etiquetas);
+    const slugs = new Set(post.etiquetas.map((e) => e.slug));
     const ids = (etiquetas.data.elementos ?? []).filter((e) => slugs.has(e.slug)).map((e) => e.id);
     asignarEtiquetasIds(ids);
   }, [post?.etiquetas, etiquetas.data]);

@@ -28,6 +28,7 @@ export interface SolicitudEditarCategoria {
   descripcion?: string;
   color?: string;
   orden?: number;
+  estado?: 'ACTIVO' | 'INACTIVO';
 }
 
 export interface SolicitudEditarEtiqueta {
