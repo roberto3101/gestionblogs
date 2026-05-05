@@ -4,11 +4,11 @@ import { paginacionInicial, type Paginacion } from '@compartido/tipos/paginacion
 import type { Identificador } from '@compartido/tipos/identificador';
 import type { SolicitudCrearEtiqueta } from '../contratos/etiqueta';
 
-export const useListarEtiquetas = (codigoSitio: string | null, paginacion: Paginacion = paginacionInicial) =>
+export const useListarEtiquetas = (sitioId: Identificador | null, paginacion: Paginacion = paginacionInicial) =>
   useQuery({
-    queryKey: ['etiquetas', codigoSitio, paginacion],
-    queryFn: () => listarEtiquetasPorSitio(codigoSitio!, paginacion),
-    enabled: Boolean(codigoSitio),
+    queryKey: ['etiquetas', sitioId, paginacion],
+    queryFn: () => listarEtiquetasPorSitio(sitioId!, paginacion),
+    enabled: Boolean(sitioId),
   });
 
 export const useCrearEtiqueta = (sitioId: Identificador | null) => {

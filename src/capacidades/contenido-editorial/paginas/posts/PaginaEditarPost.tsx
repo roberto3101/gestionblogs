@@ -39,8 +39,8 @@ export const PaginaEditarPost = () => {
   const post = consulta.data;
   const sitio = post ? sitios.data?.elementos.find((s) => s.id === post.sitio_id) ?? null : null;
   const autores = useListarAutores(sitio?.codigo ?? null);
-  const categorias = useListarCategorias(sitio?.codigo ?? null);
-  const etiquetas = useListarEtiquetas(sitio?.codigo ?? null);
+  const categorias = useListarCategorias(sitio?.id ?? null);
+  const etiquetas = useListarEtiquetas(sitio?.id ?? null);
 
   const [titulo, asignarTitulo] = useState('');
   const [slug, asignarSlug] = useState('');

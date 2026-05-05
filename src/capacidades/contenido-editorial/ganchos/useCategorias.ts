@@ -4,11 +4,11 @@ import { paginacionInicial, type Paginacion } from '@compartido/tipos/paginacion
 import type { Identificador } from '@compartido/tipos/identificador';
 import type { SolicitudCrearCategoria } from '../contratos/categoria';
 
-export const useListarCategorias = (codigoSitio: string | null, paginacion: Paginacion = paginacionInicial) =>
+export const useListarCategorias = (sitioId: Identificador | null, paginacion: Paginacion = paginacionInicial) =>
   useQuery({
-    queryKey: ['categorias', codigoSitio, paginacion],
-    queryFn: () => listarCategoriasPorSitio(codigoSitio!, paginacion),
-    enabled: Boolean(codigoSitio),
+    queryKey: ['categorias', sitioId, paginacion],
+    queryFn: () => listarCategoriasPorSitio(sitioId!, paginacion),
+    enabled: Boolean(sitioId),
   });
 
 export const useCrearCategoria = (sitioId: Identificador | null) => {

@@ -13,7 +13,7 @@ import type { Categoria } from '../../contratos/categoria';
 export const PaginaCategorias = () => {
   const { sitioActivo } = useSitioActivo();
   const [mostrar, asignarMostrar] = useState(false);
-  const consulta = useListarCategorias(sitioActivo?.codigo ?? null);
+  const consulta = useListarCategorias(sitioActivo?.id ?? null);
 
   const columnas: ColumnaTabla<Categoria>[] = [
     { clave: 'color', etiqueta: '', obtener: (c) => <span className="inline-block h-3 w-3 rounded-full" style={{ background: c.color || '#777' }} />, anchoMinimo: '40px' },

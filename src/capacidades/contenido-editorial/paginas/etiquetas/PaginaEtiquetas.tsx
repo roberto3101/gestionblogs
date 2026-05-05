@@ -19,7 +19,7 @@ const columnas: ColumnaTabla<EtiquetaContenido>[] = [
 export const PaginaEtiquetas = () => {
   const { sitioActivo } = useSitioActivo();
   const [mostrar, asignarMostrar] = useState(false);
-  const consulta = useListarEtiquetas(sitioActivo?.codigo ?? null);
+  const consulta = useListarEtiquetas(sitioActivo?.id ?? null);
 
   if (!sitioActivo) {
     return <EstadoVacio titulo="Selecciona un sitio" descripcion="Las etiquetas son por sitio." />;
