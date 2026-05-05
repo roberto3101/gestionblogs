@@ -7,6 +7,7 @@ interface PropiedadesCampoTexto extends InputHTMLAttributes<HTMLInputElement> {
   ayuda?: string;
   error?: string;
   iconoIzquierdo?: ReactNode;
+  accesorioDerecho?: ReactNode;
 }
 
 export const CampoTexto = ({
@@ -14,6 +15,7 @@ export const CampoTexto = ({
   ayuda,
   error,
   iconoIzquierdo,
+  accesorioDerecho,
   className,
   id,
   ...resto
@@ -44,6 +46,7 @@ export const CampoTexto = ({
           )}
           {...resto}
         />
+        {accesorioDerecho && <span className="pr-1">{accesorioDerecho}</span>}
       </div>
       {(ayuda || error) && (
         <span id={idAyuda} className={unirClases('text-xs', error ? 'text-cinabrio' : 'text-humo')}>
