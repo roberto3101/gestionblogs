@@ -142,7 +142,7 @@ export const PaginaEditarPost = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6">
         <div className="space-y-4">
           <CampoTexto etiqueta="Título" value={titulo} onChange={(e) => asignarTitulo(e.target.value)} />
-          <EditorMarkdownDual valor={contenido} alCambiar={asignarContenido} titulo={titulo} resumen={resumen} />
+          <EditorMarkdownDual valor={contenido} alCambiar={asignarContenido} titulo={titulo} resumen={resumen} sitioId={post.sitio_id} />
           {mensajeError && <AvisoError titulo="No pudimos guardar">{mensajeError}</AvisoError>}
         </div>
 

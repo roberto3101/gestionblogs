@@ -201,6 +201,7 @@ export const PaginaCrearPost = () => {
             alCambiar={(v) => cambiarCampo('contenido', v)}
             titulo={borrador.titulo}
             resumen={borrador.resumen}
+            sitioId={borrador.sitioId}
           />
           {(erroresValidacion || mensajeError) && (
             <AvisoError titulo={erroresValidacion ? 'Falta algo' : 'No pudimos guardar'}>

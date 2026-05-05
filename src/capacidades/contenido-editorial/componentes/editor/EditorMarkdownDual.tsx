@@ -1,6 +1,10 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type ClipboardEvent, type DragEvent } from 'react';
 import { unirClases } from '@compartido/utilidades/unirClases';
 import { renderizarMarkdownLigero } from '@compartido/utilidades/renderizadorMarkdown';
+import { subirArchivo } from '../../servicios/servicioSubidaArchivos';
+import { useNotificaciones } from '@plataforma/gobierno/errores/contextoNotificaciones';
+import { ErrorHttp } from '@integraciones/http/errorHttp';
+import type { Identificador } from '@compartido/tipos/identificador';
 
 type Vista = 'dual' | 'escribir' | 'previsualizar';
 
@@ -9,6 +13,7 @@ interface PropiedadesEditorMarkdownDual {
   alCambiar: (nuevo: string) => void;
   titulo?: string;
   resumen?: string;
+  sitioId?: Identificador | '';
 }
 
 const claseEstiloPreview = [
@@ -29,9 +34,47 @@ const claseEstiloPreview = [
   '[&_.video-embed_video]:absolute [&_.video-embed_video]:inset-0 [&_.video-embed_video]:w-full [&_.video-embed_video]:h-full',
 ].join(' ');
 
-export const EditorMarkdownDual = ({ valor, alCambiar, titulo, resumen }: PropiedadesEditorMarkdownDual) => {
+const construirMarkdownInsercion = (archivo: { url: string; tipo: string; nombre: string }, alt = ''): string => {
+  if (archivo.tipo === 'VIDEO') return `@video: ${archivo.url}`;
+  return `![${alt || archivo.nombre}](${archivo.url})`;
+};
+
+const eliminarBloqueEnContenido = (contenido: string, lineaABorrar: string): string => {
+  const lineas = contenido.split('\n');
+  const indice = lineas.findIndex((l) => l.trim() === lineaABorrar.trim());
+  if (indice === -1) return contenido;
+  const lineasFiltradas = [...lineas];
+  lineasFiltradas.splice(indice, 1);
+  if (indice > 0 && indice < lineasFiltradas.length && lineasFiltradas[indice - 1].trim() === '' && lineasFiltradas[indice].trim() === '') {
+    lineasFiltradas.splice(indice, 1);
+  }
+  return lineasFiltradas.join('\n');
+};
+
+const extraerLineasMultimedia = (contenido: string): { tipo: 'imagen' | 'video' | 'youtube'; linea: string; resumen: string }[] => {
+  const lineas = contenido.split('\n');
+  const resultado: { tipo: 'imagen' | 'video' | 'youtube'; linea: string; resumen: string }[] = [];
+  for (const linea of lineas) {
+    const trimmed = linea.trim();
+    const imagen = trimmed.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
+    if (imagen) {
+      resultado.push({ tipo: 'imagen', linea: trimmed, resumen: imagen[1] || imagen[2].slice(0, 60) });
+      continue;
+    }
+    if (trimmed.startsWith('@youtube:')) resultado.push({ tipo: 'youtube', linea: trimmed, resumen: trimmed.slice(9).trim().slice(0, 60) });
+    else if (trimmed.startsWith('@video:')) resultado.push({ tipo: 'video', linea: trimmed, resumen: trimmed.slice(7).trim().slice(0, 60) });
+  }
+  return resultado;
+};
+
+export const EditorMarkdownDual = ({ valor, alCambiar, titulo, resumen, sitioId }: PropiedadesEditorMarkdownDual) => {
   const [vista, asignarVista] = useState<Vista>('dual');
+  const [esArrastrando, asignarEsArrastrando] = useState(false);
+  const [esSubiendo, asignarEsSubiendo] = useState(false);
   const referenciaArea = useRef<HTMLTextAreaElement | null>(null);
+  const referenciaInput = useRef<HTMLInputElement | null>(null);
+  const { publicar } = useNotificaciones();
+
   const cuentaPalabras = valor.trim() ? valor.trim().split(/\s+/).length : 0;
   const minutosLectura = Math.max(1, Math.round(cuentaPalabras / 220));
 
@@ -54,68 +97,155 @@ export const EditorMarkdownDual = ({ valor, alCambiar, titulo, resumen }: Propie
     }, 0);
   };
 
-  const insertarImagen = () => {
-    const url = window.prompt('URL pública de la imagen:');
-    if (!url) return;
-    const alt = window.prompt('Texto descriptivo (alt) o caption:') ?? '';
-    insertarEnPosicion(`![${alt}](${url})`);
+  const subirYInsertar = async (archivos: File[]) => {
+    if (archivos.length === 0) return;
+    asignarEsSubiendo(true);
+    try {
+      for (const archivo of archivos) {
+        const subido = await subirArchivo(archivo, (sitioId || undefined) as Identificador | undefined);
+        insertarEnPosicion(construirMarkdownInsercion(subido));
+        publicar({ tono: 'exito', titulo: `${subido.nombre} subido`, detalle: subido.url });
+      }
+    } catch (error) {
+      const mensaje = error instanceof ErrorHttp ? error.message : 'Error al subir archivo';
+      publicar({ tono: 'error', titulo: 'Subida fallida', detalle: mensaje });
+    } finally {
+      asignarEsSubiendo(false);
+    }
   };
 
-  const insertarVideoYoutube = () => {
-    const url = window.prompt('URL de YouTube (ej: https://youtube.com/watch?v=...):');
+  const alSeleccionarArchivo = (evento: ChangeEvent<HTMLInputElement>) => {
+    const archivos = Array.from(evento.target.files ?? []);
+    if (archivos.length > 0) void subirYInsertar(archivos);
+    evento.target.value = '';
+  };
+
+  const alArrastrarSobre = (evento: DragEvent<HTMLDivElement>) => {
+    evento.preventDefault();
+    asignarEsArrastrando(true);
+  };
+
+  const alSalirArrastre = (evento: DragEvent<HTMLDivElement>) => {
+    evento.preventDefault();
+    asignarEsArrastrando(false);
+  };
+
+  const alSoltarArchivo = (evento: DragEvent<HTMLDivElement>) => {
+    evento.preventDefault();
+    asignarEsArrastrando(false);
+    const archivos = Array.from(evento.dataTransfer.files);
+    if (archivos.length > 0) void subirYInsertar(archivos);
+  };
+
+  const alPegarPortapapeles = (evento: ClipboardEvent<HTMLTextAreaElement>) => {
+    const archivos: File[] = [];
+    for (const item of Array.from(evento.clipboardData.items)) {
+      if (item.kind === 'file') {
+        const archivo = item.getAsFile();
+        if (archivo) archivos.push(archivo);
+      }
+    }
+    if (archivos.length > 0) {
+      evento.preventDefault();
+      void subirYInsertar(archivos);
+    }
+  };
+
+  const insertarYoutube = () => {
+    const url = window.prompt('URL de YouTube:');
     if (!url) return;
     insertarEnPosicion(`@youtube: ${url}`);
   };
 
-  const insertarVideoVimeo = () => {
-    const url = window.prompt('URL de Vimeo:');
-    if (!url) return;
-    insertarEnPosicion(`@vimeo: ${url}`);
+  const eliminarBloque = (linea: string) => {
+    if (!window.confirm('¿Eliminar este bloque de contenido?')) return;
+    alCambiar(eliminarBloqueEnContenido(valor, linea));
   };
 
-  const insertarVideoArchivo = () => {
-    const url = window.prompt('URL pública del video (.mp4, .webm):');
-    if (!url) return;
-    insertarEnPosicion(`@video: ${url}`);
-  };
+  const bloquesMultimedia = extraerLineasMultimedia(valor);
 
-  const insertarBloque = (sufijo: string) => insertarEnPosicion(sufijo);
-
-  const acciones = [
-    { etiqueta: 'H2', accion: () => insertarBloque('## Subtitulo'), titulo: 'Insertar subtítulo (H2)' },
-    { etiqueta: 'B', accion: () => insertarEnPosicion('**texto**'), titulo: 'Negrita', estilo: 'font-bold' },
-    { etiqueta: 'I', accion: () => insertarEnPosicion('*texto*'), titulo: 'Cursiva', estilo: 'italic' },
-    { etiqueta: '“ ”', accion: () => insertarBloque('> cita destacada'), titulo: 'Bloque de cita' },
-    { etiqueta: '• Lista', accion: () => insertarBloque('- punto uno\n- punto dos'), titulo: 'Lista' },
-    { etiqueta: 'Imagen', accion: insertarImagen, titulo: 'Insertar imagen', destacar: true },
-    { etiqueta: 'YouTube', accion: insertarVideoYoutube, titulo: 'Insertar video de YouTube', destacar: true },
-    { etiqueta: 'Vimeo', accion: insertarVideoVimeo, titulo: 'Insertar video de Vimeo' },
-    { etiqueta: 'Video', accion: insertarVideoArchivo, titulo: 'Insertar video por URL directa' },
-  ];
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
+        e.preventDefault();
+        referenciaInput.current?.click();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   return (
     <div className="lamina overflow-hidden">
+      <input
+        ref={referenciaInput}
+        type="file"
+        multiple
+        accept="image/*,video/*,audio/*,application/pdf"
+        className="hidden"
+        onChange={alSeleccionarArchivo}
+      />
+
       <div className="filete-bajo flex flex-wrap items-center gap-2 justify-between px-3 py-2 bg-papel">
-        <div className="flex flex-wrap gap-1">
-          {acciones.map((accion) => (
-            <button
-              key={accion.etiqueta}
-              type="button"
-              onClick={accion.accion}
-              title={accion.titulo}
-              className={unirClases(
-                'h-7 px-2.5 text-xs rounded-suave border transicion-natural',
-                accion.destacar
-                  ? 'border-oliva text-oliva hover:bg-oliva-suave'
-                  : 'border-ceniza text-grafito hover:bg-ceniza/40 hover:text-tinta',
-                accion.estilo,
-              )}
-            >
-              {accion.etiqueta}
-            </button>
-          ))}
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => referenciaInput.current?.click()}
+            className="inline-flex items-center gap-1.5 h-8 px-3 text-xs rounded-suave bg-tinta text-lienzo hover:bg-grafito transicion-natural font-medium"
+            title="Subir desde tu PC (Ctrl+U)"
+          >
+            <span>↑</span> Subir archivo
+          </button>
+          <button
+            type="button"
+            onClick={insertarYoutube}
+            className="h-8 px-3 text-xs rounded-suave border border-ceniza text-grafito hover:bg-ceniza/40 hover:text-tinta transicion-natural"
+            title="Insertar video de YouTube por URL"
+          >
+            YouTube
+          </button>
+          <span className="w-px bg-ceniza self-stretch mx-1" />
+          <button type="button" onClick={() => insertarEnPosicion('## Subtitulo')} className="h-8 px-2.5 text-xs rounded-suave border border-ceniza text-grafito hover:bg-ceniza/40 hover:text-tinta transicion-natural" title="Subtítulo">H2</button>
+          <button type="button" onClick={() => insertarEnPosicion('**texto**')} className="h-8 px-2.5 text-xs font-bold rounded-suave border border-ceniza text-grafito hover:bg-ceniza/40 hover:text-tinta transicion-natural" title="Negrita">B</button>
+          <button type="button" onClick={() => insertarEnPosicion('*texto*')} className="h-8 px-2.5 text-xs italic rounded-suave border border-ceniza text-grafito hover:bg-ceniza/40 hover:text-tinta transicion-natural" title="Cursiva">I</button>
+          <button type="button" onClick={() => insertarEnPosicion('> cita destacada')} className="h-8 px-2.5 text-xs rounded-suave border border-ceniza text-grafito hover:bg-ceniza/40 hover:text-tinta transicion-natural" title="Cita">"</button>
+          <button type="button" onClick={() => insertarEnPosicion('- punto uno\n- punto dos')} className="h-8 px-2.5 text-xs rounded-suave border border-ceniza text-grafito hover:bg-ceniza/40 hover:text-tinta transicion-natural" title="Lista">• Lista</button>
         </div>
+        {esSubiendo && (
+          <span className="meta-tipografia text-oliva flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-oliva animate-pulse" /> Subiendo…
+          </span>
+        )}
       </div>
+
+      {bloquesMultimedia.length > 0 && (
+        <div className="filete-bajo bg-lienzo/60 px-3 py-2.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="meta-tipografia text-humo">Multimedia ({bloquesMultimedia.length}):</span>
+            {bloquesMultimedia.map((bloque, idx) => (
+              <span
+                key={`${bloque.linea}-${idx}`}
+                className="inline-flex items-center gap-1.5 bg-papel border border-ceniza rounded-suave pl-2 pr-1 h-7 text-xs"
+                title={bloque.linea}
+              >
+                <span className="text-humo">
+                  {bloque.tipo === 'imagen' ? '◰' : bloque.tipo === 'youtube' ? '▶' : '⏵'}
+                </span>
+                <span className="text-grafito truncate max-w-[180px]">{bloque.resumen}</span>
+                <button
+                  type="button"
+                  onClick={() => eliminarBloque(bloque.linea)}
+                  aria-label="Eliminar bloque"
+                  className="h-5 w-5 grid place-items-center rounded-full text-humo hover:text-cinabrio hover:bg-cinabrio/10 transicion-natural"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="filete-bajo flex items-center justify-between px-4 h-10 bg-papel">
         <div className="flex gap-1">
           {([
@@ -144,19 +274,32 @@ export const EditorMarkdownDual = ({ valor, alCambiar, titulo, resumen }: Propie
       </div>
 
       <div
+        onDragOver={alArrastrarSobre}
+        onDragLeave={alSalirArrastre}
+        onDrop={alSoltarArchivo}
         className={unirClases(
-          'min-h-[480px]',
+          'min-h-[480px] relative',
           vista === 'dual' ? 'grid grid-cols-2 divide-x filete-tenue' : 'block',
+          esArrastrando && 'ring-2 ring-oliva ring-inset',
         )}
       >
+        {esArrastrando && (
+          <div className="absolute inset-0 z-10 grid place-items-center bg-oliva-suave/80 pointer-events-none">
+            <div className="text-center">
+              <p className="titulo-editorial text-2xl text-tinta">Suelta los archivos aquí</p>
+              <p className="meta-tipografia mt-2">Imágenes, videos, audio o PDFs</p>
+            </div>
+          </div>
+        )}
         {(vista === 'escribir' || vista === 'dual') && (
           <textarea
             ref={referenciaArea}
             value={valor}
             onChange={(evento) => alCambiar(evento.target.value)}
+            onPaste={alPegarPortapapeles}
             spellCheck={false}
             className="w-full bg-papel outline-none text-[15px] leading-7 text-tinta px-6 py-5 min-h-[480px] font-codigo resize-none"
-            placeholder={`# Tu titulo\n\nEmpieza a escribir aqui.\n\n## Subtitulo\n\nSoporta **negrita**, *cursiva*, [enlaces](https://) y listas:\n\n- Idea uno\n- Idea dos\n\n![Pie de foto](https://url-de-la-imagen.jpg)\n\n@youtube: https://youtube.com/watch?v=...`}
+            placeholder={`# Tu título\n\nEscribe aquí. Soporta **negrita**, *cursiva* y [enlaces](https://).\n\n## Subtítulo\n\nArrastra imágenes o videos sobre este editor para subirlos automáticamente.\nTambién puedes pegar imágenes desde el portapapeles (Ctrl+V).\n\nO usa el botón "Subir archivo" arriba (Ctrl+U).`}
           />
         )}
         {(vista === 'previsualizar' || vista === 'dual') && (
