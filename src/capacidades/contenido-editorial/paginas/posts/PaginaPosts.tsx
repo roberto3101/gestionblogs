@@ -9,6 +9,7 @@ import { Cargando } from '@compartido/interfaz/retroalimentacion/Cargando';
 import { EstadoVacio } from '@compartido/interfaz/retroalimentacion/EstadoVacio';
 import { Etiqueta } from '@compartido/interfaz/primitivas/Etiqueta';
 import { useListarPosts } from '../../ganchos/usePosts';
+import { useEliminarPost } from '../../ganchos/useEdicion';
 import { useSitioActivo } from '@plataforma/contexto/contextoSitioActivo';
 import { formatearFecha } from '@compartido/utilidades/formatearFecha';
 import { paginacionInicial, type Paginacion } from '@compartido/tipos/paginacion';
@@ -20,41 +21,64 @@ const obtenerTonoEstado = (estado: string): 'oliva' | 'ambar' | 'neutro' => {
   return 'neutro';
 };
 
-const columnas: ColumnaTabla<Post>[] = [
-  {
-    clave: 'titulo',
-    etiqueta: 'Título',
-    obtener: (p) => (
-      <div>
-        <p className="font-medium text-tinta">{p.titulo}</p>
-        <p className="text-xs text-humo font-codigo">{p.slug}</p>
-      </div>
-    ),
-  },
-  {
-    clave: 'estado',
-    etiqueta: 'Estado',
-    obtener: (p) => <Etiqueta tono={obtenerTonoEstado(p.estado)}>{p.estado}</Etiqueta>,
-  },
-  {
-    clave: 'idioma',
-    etiqueta: 'Idioma',
-    obtener: (p) => <span className="text-grafito uppercase text-xs">{p.idioma}</span>,
-  },
-  {
-    clave: 'publicado',
-    etiqueta: 'Publicado',
-    obtener: (p) => <span className="text-humo">{formatearFecha(p.publicado_en)}</span>,
-    alineacion: 'derecha',
-  },
-];
-
 export const PaginaPosts = () => {
   const { sitioActivo } = useSitioActivo();
   const navegar = useNavigate();
   const [paginacion, asignarPaginacion] = useState<Paginacion>(paginacionInicial);
   const [busqueda, asignarBusqueda] = useState('');
   const consulta = useListarPosts(sitioActivo?.codigo ?? null, paginacion);
+  const eliminacion = useEliminarPost();
+
+  const columnas: ColumnaTabla<Post>[] = [
+    {
+      clave: 'titulo',
+      etiqueta: 'Título',
+      obtener: (p) => (
+        <div>
+          <p className="font-medium text-tinta">{p.titulo}</p>
+          <p className="text-xs text-humo font-codigo">{p.slug}</p>
+        </div>
+      ),
+    },
+    {
+      clave: 'estado',
+      etiqueta: 'Estado',
+      obtener: (p) => <Etiqueta tono={obtenerTonoEstado(p.estado)}>{p.estado}</Etiqueta>,
+    },
+    {
+      clave: 'idioma',
+      etiqueta: 'Idioma',
+      obtener: (p) => <span className="text-grafito uppercase text-xs">{p.idioma}</span>,
+    },
+    {
+      clave: 'publicado',
+      etiqueta: 'Publicado',
+      obtener: (p) => <span className="text-humo">{formatearFecha(p.publicado_en)}</span>,
+      alineacion: 'derecha',
+    },
+    {
+      clave: 'acciones',
+      etiqueta: '',
+      obtener: (p) => (
+        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+          <Boton
+            tono="peligro"
+            tamano="compacto"
+            cargando={eliminacion.isPending && eliminacion.variables === p.id}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm(`¿Eliminar "${p.titulo}"? Es un borrado lógico — se puede recuperar desde la base de datos.`)) {
+                eliminacion.mutate(p.id);
+              }
+            }}
+          >
+            Eliminar
+          </Boton>
+        </div>
+      ),
+      anchoMinimo: '120px',
+    },
+  ];
 
   const filasFiltradas = useMemo(() => {
     const elementos = consulta.data?.elementos ?? [];
