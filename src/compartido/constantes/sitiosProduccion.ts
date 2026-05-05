@@ -20,7 +20,7 @@ const leerConfiguracionDesdeEnv = (): DefinicionSitioPublico[] => {
 const sitiosPorDefecto: DefinicionSitioPublico[] = [
   {
     codigo: 'DGDWEB',
-    urlProduccion: 'https://dgd-enterprise-vercel-zwsf.vercel.app',
+    urlProduccion: 'https://dgd-enterprise-vercel-p5f9.vercel.app',
     rutaBlog: '/es/blog',
   },
   {
