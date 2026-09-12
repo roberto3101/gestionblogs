@@ -34,7 +34,7 @@ const TONO_ENTREGA: Record<MensajeContacto['estado_entrega'], 'oliva' | 'ambar' 
 const TEXTO_ENTREGA: Record<MensajeContacto['estado_entrega'], string> = {
   ENVIADO: 'Aviso enviado',
   PENDIENTE: 'Enviando',
-  SIN_CORREO: 'Sin correo configurado',
+  SIN_CORREO: 'No salió el correo',
   FALLIDO: 'Aviso no enviado',
 };
 
@@ -99,9 +99,9 @@ export const PaginaMensajes = () => {
 
       {hayFallidos && (
         <div className="mb-5 border border-ambar/40 bg-ambar/5 rounded-suave px-4 py-3 text-sm text-grafito">
-          Hay mensajes cuyo aviso por correo no salió. Están íntegros en esta lista, así que no se
-          ha perdido nada; revisa la configuración SMTP del backend para que los próximos lleguen
-          también al buzón.
+          De algunos mensajes no salió el aviso por correo. <strong>No se ha perdido nada</strong>:
+          están completos en esta lista. Para que los próximos también lleguen al correo, hay que
+          configurar el envío en el servidor; pásale esto a quien lo lleve.
         </div>
       )}
 
