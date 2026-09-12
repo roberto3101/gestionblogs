@@ -42,7 +42,7 @@ export const FormularioEtiqueta = ({ sitioId, alCrear }: PropiedadesFormularioEt
         placeholder="Lanzamientos"
       />
       <CampoTexto
-        etiqueta="Slug"
+        etiqueta="Nombre para la dirección web"
         value={slug}
         onChange={(e) => asignarSlug(generarSlug(e.target.value))}
         required

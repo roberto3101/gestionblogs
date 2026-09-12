@@ -15,6 +15,8 @@ import { PaginaPosts } from '@capacidades/contenido-editorial/paginas/posts/Pagi
 import { PaginaCrearPost } from '@capacidades/contenido-editorial/paginas/posts/PaginaCrearPost';
 import { PaginaDetallePost } from '@capacidades/contenido-editorial/paginas/posts/PaginaDetallePost';
 import { PaginaEditarPost } from '@capacidades/contenido-editorial/paginas/posts/PaginaEditarPost';
+import { PaginaContenidoSitio } from '@capacidades/contenido-editorial/paginas/bloques/PaginaContenidoSitio';
+import { PaginaMensajes } from '@capacidades/contenido-editorial/paginas/mensajes/PaginaMensajes';
 
 import { PaginaUsuarios } from '@capacidades/gobierno-acceso/paginas/PaginaUsuarios';
 
@@ -40,6 +42,8 @@ export const rutasPrivadas = (
     <Route path="posts/nuevo" element={<PaginaCrearPost />} />
     <Route path="posts/:postId" element={<PaginaDetallePost />} />
     <Route path="posts/:postId/editar" element={<PaginaEditarPost />} />
+    <Route path="contenido" element={<PaginaContenidoSitio />} />
+    <Route path="mensajes" element={<PaginaMensajes />} />
     <Route path="usuarios" element={<PaginaUsuarios />} />
   </Route>
 );

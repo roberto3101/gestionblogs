@@ -5,11 +5,15 @@ import { listarPermisos, registrarPermiso } from '../servicios/servicioPermisos'
 import {
   asignarAlcance,
   asignarRolPermiso,
+  cambiarEstadoUsuarioAdmin,
   crearUsuarioAdmin,
+  editarUsuarioAdmin,
+  eliminarUsuarioAdmin,
   listarAlcances,
   listarUsuariosAdmin,
   revocarAlcance,
 } from '../servicios/servicioAlcances';
+import type { Identificador } from '@compartido/tipos/identificador';
 import type { Paginacion } from '@compartido/tipos/paginacion';
 import { paginacionInicial } from '@compartido/tipos/paginacion';
 
@@ -66,8 +70,11 @@ export const useRevocarAlcance = () => {
   });
 };
 
-export const useListarUsuariosAdmin = (paginacion: Paginacion = paginacionInicial) =>
-  useRecursoListado({ clave: CLAVE_USUARIOS, consultar: listarUsuariosAdmin, paginacion });
+export const useListarUsuariosAdmin = (paginacion: Paginacion = paginacionInicial, filtroEstado?: string) =>
+  useQuery({
+    queryKey: [...CLAVE_USUARIOS, paginacion, filtroEstado ?? ''],
+    queryFn: () => listarUsuariosAdmin(paginacion, filtroEstado),
+  });
 
 export const useCrearUsuarioAdmin = () => {
   const cliente = useQueryClient();
@@ -78,5 +85,34 @@ export const useCrearUsuarioAdmin = () => {
       cliente.invalidateQueries({ queryKey: CLAVE_USUARIOS });
       cliente.invalidateQueries({ queryKey: CLAVE_ALCANCES });
     },
+  });
+};
+
+export const useEditarUsuarioAdmin = () => {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, correo }: { id: Identificador; correo: string }) =>
+      editarUsuarioAdmin(id, correo),
+    meta: { exito: 'Correo actualizado' },
+    onSuccess: () => cliente.invalidateQueries({ queryKey: CLAVE_USUARIOS }),
+  });
+};
+
+export const useCambiarEstadoUsuarioAdmin = () => {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, estado }: { id: Identificador; estado: 'ACTIVO' | 'INACTIVO' }) =>
+      cambiarEstadoUsuarioAdmin(id, estado),
+    meta: { exito: 'Estado actualizado' },
+    onSuccess: () => cliente.invalidateQueries({ queryKey: CLAVE_USUARIOS }),
+  });
+};
+
+export const useEliminarUsuarioAdmin = () => {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: (id: Identificador) => eliminarUsuarioAdmin(id),
+    meta: { exito: 'Usuario eliminado' },
+    onSuccess: () => cliente.invalidateQueries({ queryKey: CLAVE_USUARIOS }),
   });
 };

@@ -12,3 +12,4 @@ export interface SolicitudRegistrarRol {
   nombre: string;
   descripcion?: string;
 }
+  

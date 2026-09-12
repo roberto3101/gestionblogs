@@ -19,9 +19,15 @@ export interface PasoFlujo {
 export const useFlujoPublicacion = (): { pasos: PasoFlujo[]; pasoActual: PasoFlujo | null; cargando: boolean } => {
   const empresas = useListarEmpresas();
   const sitios = useListarSitios();
-  const codigoSitio = sitios.data?.elementos[0]?.codigo ?? null;
+  // Bug fix: useListarAutores / usePosts esperan el código del sitio (string corto
+  // como "DGDWEB") pero useListarCategorias espera el ID (UUID). Antes le
+  // pasábamos código a los tres → categorías nunca cargaba → paso 4 quedaba
+  // pendiente para siempre aunque ya hubieras creado categorías.
+  const sitio = sitios.data?.elementos[0];
+  const codigoSitio = sitio?.codigo ?? null;
+  const idSitio = sitio?.id ?? null;
   const autores = useListarAutores(codigoSitio);
-  const categorias = useListarCategorias(codigoSitio);
+  const categorias = useListarCategorias(idSitio);
   const posts = useListarPosts(codigoSitio);
 
   const cargando =

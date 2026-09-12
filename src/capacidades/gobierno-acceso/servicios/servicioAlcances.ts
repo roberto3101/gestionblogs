@@ -1,4 +1,4 @@
-import { obtener, enviar, eliminar } from '@integraciones/http/clienteHttp';
+import { obtener, enviar, eliminar, reemplazar, ajustar } from '@integraciones/http/clienteHttp';
 import { normalizarListado } from '@compartido/utilidades/normalizarListado';
 import type { Identificador } from '@compartido/tipos/identificador';
 import type { ListadoPaginado, Paginacion } from '@compartido/tipos/paginacion';
@@ -44,8 +44,13 @@ export const listarAlcances = async (): Promise<AlcanceEnriquecido[]> => {
 export const revocarAlcance = (alcanceId: Identificador): Promise<{ id: string }> =>
   eliminar<{ id: string }>(`/gobierno/alcances/${alcanceId}`);
 
-export const listarUsuariosAdmin = async (paginacion: Paginacion): Promise<ListadoPaginado<UsuarioAdmin>> => {
-  const crudo = await obtener<unknown>(`/gobierno/usuarios?${aCadenaConsulta(paginacion)}`);
+export const listarUsuariosAdmin = async (
+  paginacion: Paginacion,
+  filtroEstado?: string,
+): Promise<ListadoPaginado<UsuarioAdmin>> => {
+  const consulta = aCadenaConsulta(paginacion);
+  const con = filtroEstado ? `${consulta}&estado=${encodeURIComponent(filtroEstado)}` : consulta;
+  const crudo = await obtener<unknown>(`/gobierno/usuarios?${con}`);
   return normalizarListado<UsuarioAdmin>(crudo);
 };
 
@@ -58,3 +63,14 @@ export interface SolicitudCrearUsuarioAdmin {
 
 export const crearUsuarioAdmin = (solicitud: SolicitudCrearUsuarioAdmin): Promise<UsuarioAdmin> =>
   enviar<UsuarioAdmin>('/gobierno/usuarios', solicitud);
+
+export const editarUsuarioAdmin = (id: Identificador, correoElectronico: string): Promise<{ id: string; correo_electronico: string }> =>
+  reemplazar(`/gobierno/usuarios/${id}`, { correo_electronico: correoElectronico });
+
+// Estados de usuario en backend: ACTIVO | INACTIVO | BLOQUEADO | PENDIENTE | ELIMINADO.
+// Aquí solo manejamos toggle ACTIVO ↔ INACTIVO.
+export const cambiarEstadoUsuarioAdmin = (id: Identificador, estado: 'ACTIVO' | 'INACTIVO'): Promise<{ id: string; estado: string }> =>
+  ajustar(`/gobierno/usuarios/${id}/estado`, { estado });
+
+export const eliminarUsuarioAdmin = (id: Identificador): Promise<{ id: string }> =>
+  eliminar(`/gobierno/usuarios/${id}`);

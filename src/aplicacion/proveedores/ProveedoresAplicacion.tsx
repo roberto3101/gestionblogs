@@ -7,7 +7,9 @@ import { PilaNotificaciones } from '@plataforma/gobierno/errores/PilaNotificacio
 import { PuenteNotificacionesErrores } from '@plataforma/gobierno/errores/PuenteNotificacionesErrores';
 
 export const ProveedoresAplicacion = ({ children }: { children: ReactNode }) => (
-  <BrowserRouter>
+  // La misma carpeta que Vite: sin esto, el enrutador buscaria /panel en
+  // la raiz del dominio y no en /cms/panel.
+  <BrowserRouter basename={import.meta.env.BASE_URL}>
     <ProveedorConsultas>
       <ProveedorNotificaciones>
         <ProveedorSesion>

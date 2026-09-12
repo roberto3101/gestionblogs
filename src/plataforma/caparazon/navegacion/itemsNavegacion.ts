@@ -4,23 +4,34 @@ export interface ItemNavegacion {
   agrupacion: 'redaccion' | 'estructura' | 'gobierno' | 'general';
 }
 
-// Menu simplificado para el caso de uso real (admin unico, ~5 sitios).
-// Ocultos: Etiquetas (redundante con categorias), Medios (subida directa
-// desde el editor). Toda la gestion de gobierno (crear usuario, asignar
-// rol, revocar acceso) vive en /panel/usuarios.
+/**
+ * El menú de la izquierda, escrito para que se entienda sin explicación.
+ *
+ * Cada nombre dice qué vas a encontrar, no cómo se llama por dentro. «Posts»
+ * era el nombre del programa; «Artículos del blog» es lo que la gente busca.
+ *
+ * Quedan fuera a propósito las etiquetas (se solapan con las categorías) y la
+ * biblioteca de archivos (se suben desde donde se usan). Crear usuarios, dar
+ * permisos y quitarlos vive todo en «Quién puede entrar».
+ */
 export const itemsNavegacion: ItemNavegacion[] = [
   { ruta: '/panel', etiqueta: 'Inicio', agrupacion: 'general' },
-  { ruta: '/panel/posts', etiqueta: 'Posts', agrupacion: 'redaccion' },
-  { ruta: '/panel/autores', etiqueta: 'Autores', agrupacion: 'redaccion' },
-  { ruta: '/panel/categorias', etiqueta: 'Categorias', agrupacion: 'estructura' },
-  { ruta: '/panel/sitios', etiqueta: 'Sitios', agrupacion: 'estructura' },
+
+  { ruta: '/panel/contenido', etiqueta: 'Textos y fotos de la web', agrupacion: 'redaccion' },
+  { ruta: '/panel/posts', etiqueta: 'Artículos del blog', agrupacion: 'redaccion' },
+  { ruta: '/panel/mensajes', etiqueta: 'Mensajes recibidos', agrupacion: 'redaccion' },
+
+  { ruta: '/panel/autores', etiqueta: 'Quién firma los artículos', agrupacion: 'estructura' },
+  { ruta: '/panel/categorias', etiqueta: 'Temas del blog', agrupacion: 'estructura' },
+  { ruta: '/panel/sitios', etiqueta: 'Webs', agrupacion: 'estructura' },
+
   { ruta: '/panel/empresas', etiqueta: 'Empresas', agrupacion: 'gobierno' },
-  { ruta: '/panel/usuarios', etiqueta: 'Usuarios', agrupacion: 'gobierno' },
+  { ruta: '/panel/usuarios', etiqueta: 'Quién puede entrar', agrupacion: 'gobierno' },
 ];
 
 export const titulosAgrupacion: Record<ItemNavegacion['agrupacion'], string> = {
-  general: 'General',
-  redaccion: 'Redaccion',
-  estructura: 'Estructura',
-  gobierno: 'Gobierno',
+  general: '',
+  redaccion: 'Lo que se ve en la web',
+  estructura: 'Cómo se organiza',
+  gobierno: 'Administración',
 };

@@ -268,10 +268,10 @@ export const PaginaCrearPost = () => {
               )}
             </div>
             <CampoTexto
-              etiqueta="Slug"
+              etiqueta="Nombre para la dirección web"
               value={borrador.slug}
               onChange={(e) => cambiarCampo('slug', generarSlug(e.target.value))}
-              ayuda="Aparece en la URL pública."
+              ayuda="Así se verá al final de la dirección. Solo minúsculas y guiones."
             />
             <AreaTexto
               etiqueta="Resumen"
@@ -313,13 +313,13 @@ export const PaginaCrearPost = () => {
           <Lamina className="p-5 space-y-4">
             <p className="meta-tipografia">SEO</p>
             <CampoTexto
-              etiqueta="Título SEO"
+              etiqueta="Título en Google"
               value={borrador.seoTitulo}
               onChange={(e) => cambiarCampo('seoTitulo', e.target.value)}
               placeholder={borrador.titulo}
             />
             <AreaTexto
-              etiqueta="Descripción SEO"
+              etiqueta="Descripción en Google"
               value={borrador.seoDescripcion}
               onChange={(e) => cambiarCampo('seoDescripcion', e.target.value)}
               placeholder={borrador.resumen}

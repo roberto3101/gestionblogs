@@ -109,7 +109,11 @@ const FormularioEditarCategoria = ({ categoria, alGuardar, alCancelar }: Propied
   const [nombre, asignarNombre] = useState(categoria.nombre);
   const [descripcion, asignarDescripcion] = useState(categoria.descripcion ?? '');
   const [color, asignarColor] = useState(categoria.color ?? '#3f5c34');
-  const [estado, asignarEstado] = useState(categoria.estado);
+  // El contrato de lectura trae `estado` como string libre (la base admite
+  // también ELIMINADO), pero la edición solo acepta activar o desactivar.
+  const [estado, asignarEstado] = useState<'ACTIVO' | 'INACTIVO'>(
+    categoria.estado === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO',
+  );
   const edicion = useEditarCategoria(categoria.id);
 
   const enviar = (evento: React.FormEvent) => {
@@ -145,7 +149,7 @@ const FormularioEditarCategoria = ({ categoria, alGuardar, alCancelar }: Propied
         <span className="meta-tipografia">Estado</span>
         <select
           value={estado}
-          onChange={(e) => asignarEstado(e.target.value)}
+          onChange={(e) => asignarEstado(e.target.value === 'INACTIVO' ? 'INACTIVO' : 'ACTIVO')}
           className="w-full bg-papel border border-ceniza rounded-suave outline-none text-sm text-tinta h-10 px-3 focus:border-tinta"
         >
           <option value="ACTIVO">ACTIVO — visible en blogs públicos</option>

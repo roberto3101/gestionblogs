@@ -68,7 +68,7 @@ export const FormularioSitio = ({ empresaIdInicial, alCrear }: PropiedadesFormul
         />
         <CampoTexto
           etiqueta="Dominio"
-          ayuda="Tu URL pública."
+          ayuda="La dirección donde se ve la web."
           value={dominio}
           onChange={(e) => asignarDominio(e.target.value)}
           required

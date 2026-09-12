@@ -50,7 +50,7 @@ export const FormularioCategoria = ({ sitioId, alCrear }: PropiedadesFormularioC
         placeholder="Anuncios"
       />
       <CampoTexto
-        etiqueta="Slug"
+        etiqueta="Nombre para la dirección web"
         value={slug}
         onChange={(e) => asignarSlug(generarSlug(e.target.value))}
         required

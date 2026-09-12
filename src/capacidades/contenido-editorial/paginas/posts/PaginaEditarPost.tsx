@@ -179,10 +179,10 @@ export const PaginaEditarPost = () => {
               </select>
             </div>
             <CampoTexto
-              etiqueta="Slug"
+              etiqueta="Nombre para la dirección web"
               value={slug}
               onChange={(e) => asignarSlug(generarSlug(e.target.value))}
-              ayuda="Aparece en la URL pública."
+              ayuda="Así se verá al final de la dirección. Solo minúsculas y guiones."
             />
             <AreaTexto etiqueta="Resumen" value={resumen} onChange={(e) => asignarResumen(e.target.value)} />
           </Lamina>
@@ -206,8 +206,8 @@ export const PaginaEditarPost = () => {
 
           <Lamina className="p-5 space-y-4">
             <p className="meta-tipografia">SEO</p>
-            <CampoTexto etiqueta="Título SEO" value={seoTitulo} onChange={(e) => asignarSeoTitulo(e.target.value)} placeholder={titulo} />
-            <AreaTexto etiqueta="Descripción SEO" value={seoDescripcion} onChange={(e) => asignarSeoDescripcion(e.target.value)} placeholder={resumen} />
+            <CampoTexto etiqueta="Título en Google" value={seoTitulo} onChange={(e) => asignarSeoTitulo(e.target.value)} placeholder={titulo} />
+            <AreaTexto etiqueta="Descripción en Google" value={seoDescripcion} onChange={(e) => asignarSeoDescripcion(e.target.value)} placeholder={resumen} />
           </Lamina>
 
           <div className="space-y-2 sticky bottom-4">

@@ -3,7 +3,10 @@ import { EncabezadoSeccion } from '@compartido/interfaz/primitivas/EncabezadoSec
 import { Boton } from '@compartido/interfaz/primitivas/Boton';
 import { CampoTexto } from '@compartido/interfaz/primitivas/CampoTexto';
 import { Selector } from '@compartido/interfaz/primitivas/Selector';
-import { Tabla, type ColumnaTabla } from '@compartido/interfaz/visualizacion-datos/Tabla';
+import { type ColumnaTabla } from '@compartido/interfaz/visualizacion-datos/Tabla';
+import { TablaResponsiva } from '@compartido/interfaz/visualizacion-datos/TablaResponsiva';
+import { TabsEstado } from '@compartido/interfaz/visualizacion-datos/TabsEstado';
+import { DialogoConfirmacion } from '@compartido/interfaz/retroalimentacion/DialogoConfirmacion';
 import { Cargando } from '@compartido/interfaz/retroalimentacion/Cargando';
 import { EstadoVacio } from '@compartido/interfaz/retroalimentacion/EstadoVacio';
 import { Etiqueta } from '@compartido/interfaz/primitivas/Etiqueta';
@@ -12,7 +15,10 @@ import { AvisoError } from '@compartido/interfaz/retroalimentacion/AvisoError';
 import { SelectorEmpresa } from '@capacidades/contenido-editorial/componentes/selectores/SelectorEmpresa';
 import {
   useAsignarAlcance,
+  useCambiarEstadoUsuarioAdmin,
   useCrearUsuarioAdmin,
+  useEditarUsuarioAdmin,
+  useEliminarUsuarioAdmin,
   useListarAlcances,
   useListarRoles,
   useListarUsuariosAdmin,
@@ -41,13 +47,27 @@ const generarPasswordSegura = (): string => {
 
 const correoEsValido = (correo: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.trim());
 
+type VistaUsuarios = 'ACTIVO' | 'INACTIVO';
+
 export const PaginaUsuarios = () => {
-  const usuarios = useListarUsuariosAdmin();
+  const [vista, asignarVista] = useState<VistaUsuarios>('ACTIVO');
+  const usuariosActivos = useListarUsuariosAdmin(undefined, 'ACTIVO');
+  const usuariosArchivados = useListarUsuariosAdmin(undefined, 'INACTIVO');
+  const usuarios = vista === 'ACTIVO' ? usuariosActivos : usuariosArchivados;
   const alcances = useListarAlcances();
   const roles = useListarRoles();
   const creacionUsuario = useCrearUsuarioAdmin();
   const asignacion = useAsignarAlcance();
   const revocacion = useRevocarAlcance();
+  const edicionUsuario = useEditarUsuarioAdmin();
+  const cambioEstadoUsuario = useCambiarEstadoUsuarioAdmin();
+  const eliminacionUsuario = useEliminarUsuarioAdmin();
+
+  // Acción contextual (desactivar/reactivar/eliminar) + form de edición de correo
+  const [accionUsuario, asignarAccionUsuario] = useState<
+    { tipo: 'desactivar' | 'reactivar' | 'eliminar'; usuario: UsuarioAdmin } | null
+  >(null);
+  const [edicionCorreo, asignarEdicionCorreo] = useState<{ usuario: UsuarioAdmin; correo: string } | null>(null);
 
   // Form crear usuario
   const [mostrarCrear, asignarMostrarCrear] = useState(false);
@@ -187,17 +207,63 @@ export const PaginaUsuarios = () => {
     },
     {
       clave: 'acciones',
-      etiqueta: '',
+      etiqueta: 'Acciones',
+      alineacion: 'derecha',
       obtener: (u) => (
-        <div className="flex justify-end">
+        <div className="flex justify-end flex-wrap gap-2">
+          <Boton
+            tono="discreto"
+            tamano="compacto"
+            onClick={() => asignarEdicionCorreo({ usuario: u, correo: u.correo_electronico })}
+          >
+            Editar
+          </Boton>
+          {u.estado === 'ACTIVO' ? (
+            <Boton tono="discreto" tamano="compacto" onClick={() => asignarAccionUsuario({ tipo: 'desactivar', usuario: u })}>
+              Desactivar
+            </Boton>
+          ) : u.estado === 'INACTIVO' ? (
+            <Boton tono="discreto" tamano="compacto" onClick={() => asignarAccionUsuario({ tipo: 'reactivar', usuario: u })}>
+              Reactivar
+            </Boton>
+          ) : null}
+          <Boton tono="peligro" tamano="compacto" onClick={() => asignarAccionUsuario({ tipo: 'eliminar', usuario: u })}>
+            Eliminar
+          </Boton>
           <Boton tono="discreto" tamano="compacto" onClick={() => asignarUsuarioDetalle(u)}>
-            Gestionar accesos
+            Accesos
           </Boton>
         </div>
       ),
-      anchoMinimo: '170px',
+      anchoMinimo: '380px',
     },
   ];
+
+  const confirmarAccionUsuario = () => {
+    if (!accionUsuario) return;
+    const { tipo, usuario } = accionUsuario;
+    if (tipo === 'desactivar') {
+      cambioEstadoUsuario.mutate(
+        { id: usuario.id, estado: 'INACTIVO' },
+        { onSuccess: () => asignarAccionUsuario(null) },
+      );
+    } else if (tipo === 'reactivar') {
+      cambioEstadoUsuario.mutate(
+        { id: usuario.id, estado: 'ACTIVO' },
+        { onSuccess: () => asignarAccionUsuario(null) },
+      );
+    } else {
+      eliminacionUsuario.mutate(usuario.id, { onSuccess: () => asignarAccionUsuario(null) });
+    }
+  };
+
+  const guardarEdicionCorreo = () => {
+    if (!edicionCorreo) return;
+    edicionUsuario.mutate(
+      { id: edicionCorreo.usuario.id, correo: edicionCorreo.correo.trim() },
+      { onSuccess: () => asignarEdicionCorreo(null) },
+    );
+  };
 
   const mensajeErrorCrear = creacionUsuario.error instanceof ErrorHttp ? creacionUsuario.error.message : null;
   const mensajeErrorAsignar = asignacion.error instanceof ErrorHttp ? asignacion.error.message : null;
@@ -326,17 +392,106 @@ export const PaginaUsuarios = () => {
         </Lamina>
       )}
 
+      <TabsEstado
+        valor={vista}
+        alCambiar={(v) => asignarVista(v as VistaUsuarios)}
+        opciones={[
+          { valor: 'ACTIVO', etiqueta: 'Activos', conteo: usuariosActivos.data?.elementos.length },
+          { valor: 'INACTIVO', etiqueta: 'Archivados', conteo: usuariosArchivados.data?.elementos.length },
+        ]}
+      />
+
       {cargandoBase && <Cargando etiqueta="Cargando usuarios" />}
       {!cargandoBase && usuariosConAccesos.length === 0 && !mostrarCrear && (
         <EstadoVacio
-          titulo="Aún no hay usuarios"
-          descripcion="Crea el primero para empezar a asignar accesos."
-          accion={<Boton onClick={() => asignarMostrarCrear(true)}>Crear usuario</Boton>}
+          titulo={vista === 'ACTIVO' ? 'Aún no hay usuarios' : 'Sin usuarios archivados'}
+          descripcion={
+            vista === 'ACTIVO'
+              ? 'Crea el primero para empezar a asignar accesos.'
+              : 'Los usuarios que desactives aparecerán aquí.'
+          }
+          accion={vista === 'ACTIVO' ? <Boton onClick={() => asignarMostrarCrear(true)}>Crear usuario</Boton> : undefined}
         />
       )}
       {!cargandoBase && usuariosConAccesos.length > 0 && (
-        <Tabla columnas={columnas} filas={usuariosConAccesos} obtenerLlave={(u) => u.id} />
+        <TablaResponsiva columnas={columnas} filas={usuariosConAccesos} obtenerLlave={(u) => u.id} />
       )}
+
+      {/* Modal edición correo */}
+      {edicionCorreo && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-tinta/40 backdrop-blur-sm p-0 sm:p-4"
+          onClick={() => !edicionUsuario.isPending && asignarEdicionCorreo(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="bg-papel w-full sm:max-w-md rounded-t-marco sm:rounded-marco shadow-levantado border border-ceniza"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 space-y-4">
+              <h3 className="titulo-editorial text-xl text-tinta">Editar correo del usuario</h3>
+              <CampoTexto
+                etiqueta="Nuevo correo electrónico"
+                type="email"
+                value={edicionCorreo.correo}
+                onChange={(e) => asignarEdicionCorreo({ ...edicionCorreo, correo: e.target.value })}
+              />
+              <p className="text-xs text-grafito">
+                Al cambiar el correo, el usuario deberá verificarlo de nuevo antes de iniciar sesión.
+              </p>
+            </div>
+            <div className="px-6 py-4 border-t border-ceniza flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+              <Boton tono="discreto" onClick={() => asignarEdicionCorreo(null)} disabled={edicionUsuario.isPending}>
+                Cancelar
+              </Boton>
+              <Boton onClick={guardarEdicionCorreo} cargando={edicionUsuario.isPending}>
+                Guardar
+              </Boton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <DialogoConfirmacion
+        abierto={Boolean(accionUsuario)}
+        cargando={cambioEstadoUsuario.isPending || eliminacionUsuario.isPending}
+        titulo={
+          accionUsuario?.tipo === 'eliminar'
+            ? 'Eliminar usuario'
+            : accionUsuario?.tipo === 'desactivar'
+            ? 'Desactivar usuario'
+            : 'Reactivar usuario'
+        }
+        tonoConfirmar={accionUsuario?.tipo === 'eliminar' ? 'peligro' : 'primario'}
+        textoConfirmar={
+          accionUsuario?.tipo === 'eliminar'
+            ? 'Eliminar definitivamente'
+            : accionUsuario?.tipo === 'desactivar'
+            ? 'Sí, desactivar'
+            : 'Sí, reactivar'
+        }
+        mensaje={
+          accionUsuario?.tipo === 'eliminar' ? (
+            <>
+              Vas a eliminar a <strong>{accionUsuario.usuario.correo_electronico}</strong>. Esta acción no se puede deshacer.
+            </>
+          ) : accionUsuario?.tipo === 'desactivar' ? (
+            <>
+              <strong>{accionUsuario.usuario.correo_electronico}</strong> no podrá iniciar sesión hasta que lo reactives.
+            </>
+          ) : accionUsuario?.tipo === 'reactivar' ? (
+            <>
+              <strong>{accionUsuario.usuario.correo_electronico}</strong> podrá iniciar sesión de nuevo.
+            </>
+          ) : (
+            ''
+          )
+        }
+        alConfirmar={confirmarAccionUsuario}
+        alCancelar={() => asignarAccionUsuario(null)}
+      />
+
 
       {detalleActualizado && (
         <Lamina className="p-6 mt-8 max-w-3xl">

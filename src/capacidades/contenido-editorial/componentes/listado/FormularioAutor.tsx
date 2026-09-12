@@ -53,8 +53,8 @@ export const FormularioAutor = ({ alCrear }: PropiedadesFormularioAutor) => {
         placeholder="Equipo Editorial"
       />
       <CampoTexto
-        etiqueta="Slug"
-        ayuda="URL pública del autor."
+        etiqueta="Nombre para la dirección web"
+        ayuda="Aparece en la dirección de su página. Solo minúsculas y guiones."
         value={slug}
         onChange={(e) => asignarSlug(generarSlug(e.target.value))}
         required

@@ -6,10 +6,17 @@ import { obtenerIdentificadorDispositivo } from '@compartido/utilidades/identifi
 import { useIniciarSesion } from '../ganchos/useIniciarSesion';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
 
-const CREDENCIALES_DEMO = {
-  correo: 'admin.cms@blogs.test',
-  password: 'claveAdmin123!',
-};
+// Atajo para rellenar la cuenta que se siembra al crear la base.
+//
+// Va atado a import.meta.env.DEV, que Vite sustituye por false al compilar:
+// asi el minificador borra el bloque entero y la contrasena no queda escrita
+// dentro del archivo publicado. Con una comprobacion en tiempo de ejecucion
+// el boton se ocultaria, pero el texto seguiria ahi para quien mire el codigo.
+const ES_DESARROLLO = import.meta.env.DEV;
+
+const CREDENCIALES_DEMO = ES_DESARROLLO
+  ? { correo: 'admin.cms@blogs.test', password: 'claveAdmin123!' }
+  : { correo: '', password: '' };
 
 const IconoOjoAbierto = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,13 +96,15 @@ export const FormularioInicioSesion = () => {
       <Boton type="submit" tono="primario" tamano="amplio" cargando={inicio.isPending} className="w-full">
         Entrar al panel
       </Boton>
-      <button
-        type="button"
-        onClick={usarCredencialesDemo}
-        className="w-full text-xs text-humo hover:text-tinta meta-tipografia border border-dashed border-ceniza hover:border-grafito rounded-suave py-2.5 transicion-natural"
-      >
-        ✦ Credenciales de prueba
-      </button>
+      {ES_DESARROLLO && (
+        <button
+          type="button"
+          onClick={usarCredencialesDemo}
+          className="w-full text-xs text-humo hover:text-tinta meta-tipografia border border-dashed border-ceniza hover:border-grafito rounded-suave py-2.5 transicion-natural"
+        >
+          ✦ Credenciales de prueba
+        </button>
+      )}
     </form>
   );
 };
