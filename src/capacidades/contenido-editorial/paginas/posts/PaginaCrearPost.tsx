@@ -8,8 +8,8 @@
  * además no se parecía a la web.
  *
  * Aquí el orden es el de la cabeza de quien escribe: título, foto, entradilla,
- * quién firma, de qué va. Debajo, el texto a un lado y el post terminado al
- * otro, a todo el ancho de la pantalla. Lo que casi nunca se toca queda
+ * quién firma, de qué va. Debajo, el cuerpo del post a todo el ancho, escrito
+ * ya con el aspecto que tendrá publicado. Lo que casi nunca se toca queda
  * plegado abajo.
  */
 
@@ -34,7 +34,8 @@ import { reemplazarCategoriasPost, reemplazarEtiquetasPost } from '../../servici
 import { useBorradorAutosalvado } from '@compartido/biblioteca/useBorradorAutosalvado';
 import { generarSlug } from '@compartido/utilidades/generarSlug';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
-import { EditorPost } from '../../componentes/editor/EditorPost';
+import { EditorRico } from '../../componentes/editor/EditorRico';
+import { VistaPostComoSeVera } from '../../componentes/editor/VistaPostComoSeVera';
 import { CampoPortada } from '../../componentes/editor/CampoPortada';
 import { SelectorMultiple } from '../../componentes/editor/SelectorMultiple';
 import { BannerSitioDestino } from '../../componentes/editor/BannerSitioDestino';
@@ -92,6 +93,7 @@ export const PaginaCrearPost = () => {
   const [erroresValidacion, asignarErroresValidacion] = useState<string | null>(null);
   const [ajustesAbiertos, asignarAjustesAbiertos] = useState(false);
   const [confirmandoLimpiar, asignarConfirmandoLimpiar] = useState(false);
+  const [viendoEntero, asignarViendoEntero] = useState(false);
 
   useEffect(() => {
     if (!borrador.sitioId && sitioActivo) {
@@ -372,17 +374,24 @@ export const PaginaCrearPost = () => {
 
       {/* ------------------------------------------- escribir y ver el post */}
       <div className="mt-4">
-        <EditorPost
+        <EditorRico
           valor={borrador.contenido}
           alCambiar={(v) => cambiarCampo('contenido', v)}
-          titulo={borrador.titulo}
-          resumen={borrador.resumen}
-          urlPortada={borrador.imagenPortadaUrl || null}
-          autor={autorElegido?.nombre_publico}
-          tema={temaElegido?.nombre}
           sitioId={borrador.sitioId}
+          alPedirPantallaCompleta={() => asignarViendoEntero(true)}
         />
       </div>
+
+      <VistaPostComoSeVera
+        abierto={viendoEntero}
+        alCerrar={() => asignarViendoEntero(false)}
+        titulo={borrador.titulo}
+        resumen={borrador.resumen}
+        contenido={borrador.contenido}
+        urlPortada={borrador.imagenPortadaUrl || null}
+        autor={autorElegido?.nombre_publico}
+        tema={temaElegido?.nombre}
+      />
 
       {(erroresValidacion || mensajeError) && (
         <div className="mt-4">

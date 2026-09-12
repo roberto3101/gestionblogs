@@ -18,7 +18,8 @@ import { useListarEtiquetas } from '../../ganchos/useEtiquetas';
 import { useListarSitios } from '../../ganchos/useSitios';
 import { generarSlug } from '@compartido/utilidades/generarSlug';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
-import { EditorPost } from '../../componentes/editor/EditorPost';
+import { EditorRico } from '../../componentes/editor/EditorRico';
+import { VistaPostComoSeVera } from '../../componentes/editor/VistaPostComoSeVera';
 import { CampoPortada } from '../../componentes/editor/CampoPortada';
 import { DialogoConfirmacion } from '@compartido/interfaz/retroalimentacion/DialogoConfirmacion';
 import { SelectorMultiple } from '../../componentes/editor/SelectorMultiple';
@@ -56,6 +57,7 @@ export const PaginaEditarPost = () => {
   const [portadaId, asignarPortadaId] = useState<Identificador | ''>('');
   const [portadaUrl, asignarPortadaUrl] = useState('');
   const [confirmandoBorrar, asignarConfirmandoBorrar] = useState(false);
+  const [viendoEntero, asignarViendoEntero] = useState(false);
   const [marcaTiempoLocal, asignarMarcaTiempoLocal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -192,15 +194,21 @@ export const PaginaEditarPost = () => {
       </Lamina>
 
       <div className="mb-4">
-        <EditorPost
+        <EditorRico
           valor={contenido}
           alCambiar={asignarContenido}
+          sitioId={post.sitio_id}
+          alPedirPantallaCompleta={() => asignarViendoEntero(true)}
+        />
+        <VistaPostComoSeVera
+          abierto={viendoEntero}
+          alCerrar={() => asignarViendoEntero(false)}
           titulo={titulo}
           resumen={resumen}
+          contenido={contenido}
           urlPortada={portadaUrl || null}
           autor={autores.data?.elementos.find((a) => a.id === autorId)?.nombre_publico}
           tema={categorias.data?.elementos.find((c) => categoriasIds.includes(c.id))?.nombre}
-          sitioId={post.sitio_id}
         />
         {mensajeError && <div className="mt-4"><AvisoError titulo="No pudimos guardar">{mensajeError}</AvisoError></div>}
       </div>
