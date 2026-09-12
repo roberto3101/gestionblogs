@@ -1,3 +1,18 @@
+/**
+ * Escribir un post.
+ *
+ * La versión anterior repartía los campos en tres tarjetas apiladas en una
+ * columna de 320 px a la derecha, y dejaba al editor —con su vista previa
+ * dentro— en el hueco que sobraba. Quien escribía no encontraba el tema, no
+ * tenía dónde poner la portada, y veía el post en un recuadro estrecho que
+ * además no se parecía a la web.
+ *
+ * Aquí el orden es el de la cabeza de quien escribe: título, foto, entradilla,
+ * quién firma, de qué va. Debajo, el texto a un lado y el post terminado al
+ * otro, a todo el ancho de la pantalla. Lo que casi nunca se toca queda
+ * plegado abajo.
+ */
+
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Boton } from '@compartido/interfaz/primitivas/Boton';
@@ -19,7 +34,8 @@ import { reemplazarCategoriasPost, reemplazarEtiquetasPost } from '../../servici
 import { useBorradorAutosalvado } from '@compartido/biblioteca/useBorradorAutosalvado';
 import { generarSlug } from '@compartido/utilidades/generarSlug';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
-import { EditorMarkdownDual } from '../../componentes/editor/EditorMarkdownDual';
+import { EditorPost } from '../../componentes/editor/EditorPost';
+import { CampoPortada } from '../../componentes/editor/CampoPortada';
 import { SelectorMultiple } from '../../componentes/editor/SelectorMultiple';
 import { BannerSitioDestino } from '../../componentes/editor/BannerSitioDestino';
 import { construirUrlPublicaPost } from '@compartido/constantes/sitiosProduccion';
@@ -35,6 +51,8 @@ interface BorradorPost {
   resumen: string;
   contenido: string;
   idioma: string;
+  imagenPortadaId: Identificador | '';
+  imagenPortadaUrl: string;
   seoTitulo: string;
   seoDescripcion: string;
   categoriasIds: string[];
@@ -50,6 +68,8 @@ const borradorVacio: BorradorPost = {
   resumen: '',
   contenido: '',
   idioma: 'es',
+  imagenPortadaId: '',
+  imagenPortadaUrl: '',
   seoTitulo: '',
   seoDescripcion: '',
   categoriasIds: [],
@@ -70,6 +90,8 @@ export const PaginaCrearPost = () => {
     });
 
   const [erroresValidacion, asignarErroresValidacion] = useState<string | null>(null);
+  const [ajustesAbiertos, asignarAjustesAbiertos] = useState(false);
+  const [confirmandoLimpiar, asignarConfirmandoLimpiar] = useState(false);
 
   useEffect(() => {
     if (!borrador.sitioId && sitioActivo) {
@@ -98,6 +120,10 @@ export const PaginaCrearPost = () => {
       autorId: '',
       categoriasIds: [],
       etiquetasIds: [],
+      // La portada vive en la biblioteca de su sitio: al cambiar de web deja
+      // de ser válida y se quita en vez de guardar una referencia ajena.
+      imagenPortadaId: '',
+      imagenPortadaUrl: '',
     }));
   };
 
@@ -106,11 +132,11 @@ export const PaginaCrearPost = () => {
   };
 
   const validar = (): string | null => {
-    if (!borrador.sitioId) return 'Selecciona un sitio destino.';
-    if (!borrador.autorId) return 'Selecciona un autor.';
-    if (!borrador.titulo.trim()) return 'El título no puede estar vacío.';
-    if (!borrador.slug.trim()) return 'El slug no puede estar vacío.';
-    if (!borrador.contenido.trim()) return 'Escribe algo de contenido antes de guardar.';
+    if (!borrador.sitioId) return 'Elige en qué web va este post.';
+    if (!borrador.autorId) return 'Elige quién firma el post.';
+    if (!borrador.titulo.trim()) return 'Ponle un título.';
+    if (!borrador.slug.trim()) return 'Falta el nombre para la dirección web. Está en «Más ajustes».';
+    if (!borrador.contenido.trim()) return 'Escribe algo antes de guardar.';
     return null;
   };
 
@@ -132,25 +158,53 @@ export const PaginaCrearPost = () => {
         contenido: borrador.contenido,
         formato_contenido: 'MARKDOWN',
         idioma: borrador.idioma,
+        imagen_portada_id: (borrador.imagenPortadaId || undefined) as Identificador | undefined,
         seo_titulo: borrador.seoTitulo.trim() || undefined,
         seo_descripcion: borrador.seoDescripcion.trim() || undefined,
       });
+
+      // Los temas y las etiquetas se asignan aparte, en dos llamadas más.
+      // Si una falla hay que decirlo: antes se tragaba el error en silencio y
+      // el post salía publicado sin tema, sin que nadie se enterara.
+      const falladas: string[] = [];
       if (borrador.categoriasIds.length > 0) {
-        try { await reemplazarCategoriasPost(post.id, { categorias_ids: borrador.categoriasIds }); } catch {}
+        try {
+          await reemplazarCategoriasPost(post.id, { categorias_ids: borrador.categoriasIds });
+        } catch {
+          falladas.push('los temas');
+        }
       }
       if (borrador.etiquetasIds.length > 0) {
-        try { await reemplazarEtiquetasPost(post.id, { etiquetas_ids: borrador.etiquetasIds }); } catch {}
+        try {
+          await reemplazarEtiquetasPost(post.id, { etiquetas_ids: borrador.etiquetasIds });
+        } catch {
+          falladas.push('las etiquetas');
+        }
       }
+      if (falladas.length > 0) {
+        publicar({
+          tono: 'error',
+          titulo: `El post se guardó, pero no se pudieron asignar ${falladas.join(' ni ')}`,
+          detalle: 'Ábrelo y vuelve a intentarlo desde su ficha.',
+        });
+      }
+
       if (publicarTrasGuardar) {
         await publicacion.mutateAsync(post.id);
         const urlPublica = construirUrlPublicaPost(borrador.sitioCodigo, borrador.slug, borrador.idioma);
-        if (urlPublica) {
-          publicar({ tono: 'exito', titulo: 'Publicado en producción', detalle: urlPublica });
-        }
+        publicar({
+          tono: 'exito',
+          titulo: 'Publicado',
+          detalle: urlPublica
+            ? `${urlPublica} — la web se reconstruye en menos de un minuto`
+            : 'La web se reconstruye en menos de un minuto',
+        });
       }
       descartarBorrador();
       navegar(`/panel/posts/${post.id}`);
-    } catch {}
+    } catch {
+      // El error de creación ya se enseña debajo del editor.
+    }
   };
 
   const referenciaGuardarBorrador = useRef(guardar(false));
@@ -171,8 +225,8 @@ export const PaginaCrearPost = () => {
   if (!sitioActivo && !borrador.sitioId) {
     return (
       <EstadoVacio
-        titulo="Aún no tienes sitios"
-        descripcion="Crea un sitio antes de empezar a escribir tu primer post."
+        titulo="Aún no tienes webs"
+        descripcion="Crea una web antes de empezar a escribir tu primer post."
       />
     );
   }
@@ -180,29 +234,55 @@ export const PaginaCrearPost = () => {
   const mensajeError = creacion.error instanceof ErrorHttp ? creacion.error.message : null;
   const esCargando = creacion.isPending || publicacion.isPending;
 
+  const autorElegido = autoresDisponibles.find((a) => a.id === borrador.autorId);
+  const temaElegido = categoriasDisponibles.find((c) => borrador.categoriasIds.includes(c.id));
+
   return (
     <form onSubmit={(e) => e.preventDefault()}>
-      <div className="flex items-end justify-between mb-6 gap-4">
+      {/* ------------------------------------------------------- cabecera */}
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="space-y-1.5">
-          <Migajas items={[{ etiqueta: 'Redacción', ruta: '/panel/posts' }, { etiqueta: 'Posts', ruta: '/panel/posts' }, { etiqueta: 'Nuevo post' }]} />
-          <TituloEditorial nivel={2}>
-            Tu próximo post
-          </TituloEditorial>
+          <Migajas
+            items={[
+              { etiqueta: 'Artículos del blog', ruta: '/panel/posts' },
+              { etiqueta: 'Nuevo' },
+            ]}
+          />
+          <TituloEditorial nivel={2}>Tu próximo post</TituloEditorial>
         </div>
         <div className="flex items-center gap-3">
           <IndicadorAutosalvado marcaTiempo={marcaTiempo} />
-          <Boton
-            tono="discreto"
-            tamano="compacto"
-            type="button"
-            onClick={() => {
-              if (window.confirm('¿Descartar el borrador? Se perderán todos los cambios no publicados.')) {
-                descartarBorrador();
-              }
-            }}
-          >
-            Limpiar borrador
-          </Boton>
+          {confirmandoLimpiar ? (
+            <div className="flex items-center gap-2 rounded-suave border border-cinabrio/40 bg-cinabrio/5 px-2.5 py-1.5">
+              <span className="text-xs text-grafito">¿Borrar todo lo escrito?</span>
+              <button
+                type="button"
+                onClick={() => {
+                  descartarBorrador();
+                  asignarConfirmandoLimpiar(false);
+                }}
+                className="h-7 rounded-suave bg-cinabrio px-2.5 text-xs text-lienzo"
+              >
+                Sí, borrar
+              </button>
+              <button
+                type="button"
+                onClick={() => asignarConfirmandoLimpiar(false)}
+                className="h-7 rounded-suave px-2 text-xs text-humo hover:bg-ceniza/40"
+              >
+                No
+              </button>
+            </div>
+          ) : (
+            <Boton
+              tono="discreto"
+              tamano="compacto"
+              type="button"
+              onClick={() => asignarConfirmandoLimpiar(true)}
+            >
+              Empezar de cero
+            </Boton>
+          )}
         </div>
       </div>
 
@@ -213,87 +293,125 @@ export const PaginaCrearPost = () => {
         alCambiarIdioma={(idioma) => cambiarCampo('idioma', idioma)}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6">
+      {/* ----------------------------------------------- lo imprescindible */}
+      <Lamina className="mt-4 p-5">
         <div className="space-y-4">
           <CampoTexto
             etiqueta="Título"
             value={borrador.titulo}
             onChange={(e) => cambiarCampo('titulo', e.target.value)}
-            placeholder="Tu título aquí"
+            placeholder="De qué trata el post"
           />
-          <EditorMarkdownDual
-            valor={borrador.contenido}
-            alCambiar={(v) => cambiarCampo('contenido', v)}
-            titulo={borrador.titulo}
-            resumen={borrador.resumen}
-            sitioId={borrador.sitioId}
-          />
-          {(erroresValidacion || mensajeError) && (
-            <AvisoError titulo={erroresValidacion ? 'Falta algo' : 'No pudimos guardar'}>
-              {erroresValidacion ?? mensajeError ?? ''}
-            </AvisoError>
-          )}
-        </div>
 
-        <aside className="space-y-4">
-          <Lamina className="p-5 space-y-4">
-            <p className="meta-tipografia">Detalles</p>
-            <div className="space-y-1.5">
-              <span className="meta-tipografia">Autor</span>
-              <select
-                value={borrador.autorId}
-                onChange={(e) => cambiarCampo('autorId', e.target.value)}
-                className="w-full bg-papel border border-ceniza rounded-suave outline-none text-sm text-tinta h-10 px-3 focus:border-tinta"
-              >
-                <option value="">
-                  {consultaAutores.isLoading ? 'Cargando autores…' : 'Selecciona un autor'}
-                </option>
-                {autoresDisponibles.map((autor) => (
-                  <option key={autor.id} value={autor.id}>
-                    {autor.nombre_publico}
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            <CampoPortada
+              valorId={borrador.imagenPortadaId}
+              valorUrl={borrador.imagenPortadaUrl}
+              alCambiar={(id, url) =>
+                asignarBorrador((b) => ({ ...b, imagenPortadaId: id, imagenPortadaUrl: url }))
+              }
+              sitioId={borrador.sitioId}
+            />
+
+            <AreaTexto
+              etiqueta="Entradilla"
+              value={borrador.resumen}
+              onChange={(e) => cambiarCampo('resumen', e.target.value)}
+              ayuda="Dos líneas. Es lo que se lee en la lista de artículos."
+            />
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <span className="meta-tipografia">Quién lo firma</span>
+                <select
+                  value={borrador.autorId}
+                  onChange={(e) => cambiarCampo('autorId', e.target.value)}
+                  className="h-10 w-full rounded-suave border border-ceniza bg-papel px-3 text-sm text-tinta outline-none focus:border-tinta"
+                >
+                  <option value="">
+                    {consultaAutores.isLoading ? 'Cargando…' : 'Elige una firma'}
                   </option>
-                ))}
-              </select>
-              {autoresDisponibles.length === 0 && !consultaAutores.isLoading && borrador.sitioCodigo && (
-                <p className="text-xs text-ambar">
-                  No hay autores en este sitio.{' '}
-                  <button
-                    type="button"
-                    onClick={() => navegar('/panel/autores')}
-                    className="text-oliva underline"
-                  >
-                    Crear uno
-                  </button>
+                  {autoresDisponibles.map((autor) => (
+                    <option key={autor.id} value={autor.id}>
+                      {autor.nombre_publico}
+                    </option>
+                  ))}
+                </select>
+                {autoresDisponibles.length === 0 && !consultaAutores.isLoading && borrador.sitioCodigo && (
+                  <p className="text-xs text-ambar">
+                    Esta web no tiene firmas.{' '}
+                    <button type="button" onClick={() => navegar('/panel/autores')} className="text-oliva underline">
+                      Crear una
+                    </button>
+                  </p>
+                )}
+              </div>
+
+              <SelectorMultiple
+                etiqueta="Tema"
+                opciones={categoriasDisponibles.map((c) => ({ valor: c.id, etiqueta: c.nombre }))}
+                seleccionados={borrador.categoriasIds}
+                alCambiar={(ids) => cambiarCampo('categoriasIds', ids)}
+                marcadorVacio={
+                  consultaCategorias.isLoading
+                    ? 'Cargando…'
+                    : borrador.sitioId
+                      ? 'Esta web no tiene temas todavía.'
+                      : 'Elige una web primero.'
+                }
+              />
+              {borrador.categoriasIds.length === 0 && categoriasDisponibles.length > 0 && (
+                <p className="text-xs text-humo">
+                  Sin tema, el post no aparece en los filtros del blog.
                 </p>
               )}
             </div>
+          </div>
+        </div>
+      </Lamina>
+
+      {/* ------------------------------------------- escribir y ver el post */}
+      <div className="mt-4">
+        <EditorPost
+          valor={borrador.contenido}
+          alCambiar={(v) => cambiarCampo('contenido', v)}
+          titulo={borrador.titulo}
+          resumen={borrador.resumen}
+          urlPortada={borrador.imagenPortadaUrl || null}
+          autor={autorElegido?.nombre_publico}
+          tema={temaElegido?.nombre}
+          sitioId={borrador.sitioId}
+        />
+      </div>
+
+      {(erroresValidacion || mensajeError) && (
+        <div className="mt-4">
+          <AvisoError titulo={erroresValidacion ? 'Falta algo' : 'No pudimos guardar'}>
+            {erroresValidacion ?? mensajeError ?? ''}
+          </AvisoError>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------- lo de rara vez */}
+      <Lamina className="mt-4 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => asignarAjustesAbiertos((v) => !v)}
+          className="flex w-full items-center justify-between px-5 py-3.5 text-left transicion-natural hover:bg-ceniza/20"
+        >
+          <span className="meta-tipografia">Más ajustes</span>
+          <span className="text-xs text-humo">
+            {ajustesAbiertos ? 'Ocultar' : 'Dirección web, etiquetas y buscadores'}
+          </span>
+        </button>
+
+        {ajustesAbiertos && (
+          <div className="grid grid-cols-1 gap-5 border-t border-ceniza p-5 md:grid-cols-3">
             <CampoTexto
               etiqueta="Nombre para la dirección web"
               value={borrador.slug}
               onChange={(e) => cambiarCampo('slug', generarSlug(e.target.value))}
-              ayuda="Así se verá al final de la dirección. Solo minúsculas y guiones."
-            />
-            <AreaTexto
-              etiqueta="Resumen"
-              value={borrador.resumen}
-              onChange={(e) => cambiarCampo('resumen', e.target.value)}
-              ayuda="2 líneas que aparecen en listados."
-            />
-          </Lamina>
-
-          <Lamina className="p-5 space-y-4">
-            <SelectorMultiple
-              etiqueta="Categorías"
-              opciones={categoriasDisponibles.map((c) => ({ valor: c.id, etiqueta: c.nombre }))}
-              seleccionados={borrador.categoriasIds}
-              alCambiar={(ids) => cambiarCampo('categoriasIds', ids)}
-              marcadorVacio={
-                consultaCategorias.isLoading
-                  ? 'Cargando categorías…'
-                  : borrador.sitioId
-                    ? 'Sin categorías en este sitio. Crea una en /panel/categorias.'
-                    : 'Selecciona un sitio primero.'
-              }
+              ayuda="Lo que va al final de la dirección. Solo minúsculas y guiones."
             />
             <SelectorMultiple
               etiqueta="Etiquetas"
@@ -302,39 +420,50 @@ export const PaginaCrearPost = () => {
               alCambiar={(ids) => cambiarCampo('etiquetasIds', ids)}
               marcadorVacio={
                 consultaEtiquetas.isLoading
-                  ? 'Cargando etiquetas…'
+                  ? 'Cargando…'
                   : borrador.sitioId
-                    ? 'Sin etiquetas en este sitio.'
-                    : 'Selecciona un sitio primero.'
+                    ? 'Esta web no tiene etiquetas.'
+                    : 'Elige una web primero.'
               }
             />
-          </Lamina>
-
-          <Lamina className="p-5 space-y-4">
-            <p className="meta-tipografia">SEO</p>
-            <CampoTexto
-              etiqueta="Título en Google"
-              value={borrador.seoTitulo}
-              onChange={(e) => cambiarCampo('seoTitulo', e.target.value)}
-              placeholder={borrador.titulo}
-            />
-            <AreaTexto
-              etiqueta="Descripción en Google"
-              value={borrador.seoDescripcion}
-              onChange={(e) => cambiarCampo('seoDescripcion', e.target.value)}
-              placeholder={borrador.resumen}
-            />
-          </Lamina>
-
-          <div className="space-y-2 sticky bottom-4">
-            <Boton type="button" tono="primario" tamano="amplio" cargando={esCargando} onClick={guardar(true) as unknown as () => void} className="w-full">
-              Publicar ahora
-            </Boton>
-            <Boton type="button" tono="discreto" tamano="amplio" cargando={esCargando} onClick={guardar(false) as unknown as () => void} className="w-full">
-              Guardar borrador
-            </Boton>
+            <div className="space-y-4">
+              <CampoTexto
+                etiqueta="Título en Google"
+                value={borrador.seoTitulo}
+                onChange={(e) => cambiarCampo('seoTitulo', e.target.value)}
+                placeholder={borrador.titulo || 'Se usa el título del post'}
+              />
+              <AreaTexto
+                etiqueta="Descripción en Google"
+                value={borrador.seoDescripcion}
+                onChange={(e) => cambiarCampo('seoDescripcion', e.target.value)}
+                placeholder={borrador.resumen || 'Se usa la entradilla'}
+              />
+            </div>
           </div>
-        </aside>
+        )}
+      </Lamina>
+
+      {/* ------------------------------------------------------------ acciones */}
+      <div className="sticky bottom-0 z-20 mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-ceniza bg-lienzo/95 px-1 py-3 backdrop-blur">
+        <Boton
+          type="button"
+          tono="discreto"
+          tamano="compacto"
+          cargando={esCargando}
+          onClick={guardar(false) as unknown as () => void}
+        >
+          Guardar sin publicar
+        </Boton>
+        <Boton
+          type="button"
+          tono="primario"
+          tamano="compacto"
+          cargando={esCargando}
+          onClick={guardar(true) as unknown as () => void}
+        >
+          Publicar ahora
+        </Boton>
       </div>
     </form>
   );

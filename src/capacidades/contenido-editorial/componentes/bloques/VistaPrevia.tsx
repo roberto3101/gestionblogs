@@ -55,6 +55,7 @@ export const VistaPrevia = ({
   const [bloqueada, asignarBloqueada] = useState(false);
   // Si se puede señalar en la página lo que se está cambiando.
   const [puedeMarcar, asignarPuedeMarcar] = useState(true);
+  const [pantallaCompleta, asignarPantallaCompleta] = useState(false);
 
   // Se pide al CMS, que la descarga de la web y la sirve desde aqui. Sin
   // esto el navegador la bloquearia: la web prohibe que la incrusten.
@@ -121,8 +122,25 @@ export const VistaPrevia = ({
     return () => clearTimeout(aviso);
   }, [direccion]);
 
+  // Escape sale de la pantalla completa, que es lo que espera cualquiera.
+  useEffect(() => {
+    if (!pantallaCompleta) return;
+    const alPulsar = (evento: KeyboardEvent) => {
+      if (evento.key === 'Escape') asignarPantallaCompleta(false);
+    };
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, [pantallaCompleta]);
+
   return (
-    <aside className="flex flex-col border border-ceniza rounded-suave bg-papel overflow-hidden">
+    <aside
+      className={unirClases(
+        'flex flex-col bg-papel overflow-hidden',
+        pantallaCompleta
+          ? 'fixed inset-0 z-50 p-0'
+          : 'border border-ceniza rounded-suave',
+      )}
+    >
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-ceniza bg-lienzo">
         <span className="meta-tipografia text-grafito">Así se va a ver</span>
 
@@ -142,6 +160,14 @@ export const VistaPrevia = ({
               {t === 'movil' ? 'Móvil' : 'Ordenador'}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => asignarPantallaCompleta((v) => !v)}
+            className="h-7 px-2.5 text-xs rounded-suave border border-ceniza text-grafito transicion-natural hover:bg-ceniza/40 hover:text-tinta"
+            title={pantallaCompleta ? 'Volver al panel (Esc)' : 'Ver la página a pantalla completa'}
+          >
+            {pantallaCompleta ? 'Salir (Esc)' : 'Pantalla completa'}
+          </button>
         </div>
 
         <Boton
@@ -177,7 +203,10 @@ export const VistaPrevia = ({
         </p>
       )}
 
-      <div className="relative bg-lienzo overflow-auto" style={{ height: '70vh' }}>
+      <div
+        className="relative flex-1 bg-lienzo overflow-auto"
+        style={pantallaCompleta ? undefined : { height: '70vh' }}
+      >
         {cargando && (
           <p className="absolute inset-0 flex items-center justify-center text-sm text-humo">
             Cargando la web…
@@ -185,14 +214,16 @@ export const VistaPrevia = ({
         )}
         <div
           className="mx-auto transition-all"
-          style={{ width: ANCHOS[tamano], maxWidth: '100%' }}
+          style={{ width: ANCHOS[tamano], maxWidth: '100%', height: '100%' }}
         >
           <iframe
             ref={marco}
             src={direccion}
             title="Así se va a ver la web"
             className="w-full border-0 bg-white"
-            style={{ height: '70vh' }}
+            // A pantalla completa el marco ocupa todo el alto disponible; si no,
+            // el 70% de la ventana como antes.
+            style={{ height: pantallaCompleta ? '100%' : '70vh' }}
             onLoad={() => {
               asignarCargando(false);
               asignarBloqueada(false);

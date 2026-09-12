@@ -1,115 +1,87 @@
-const escaparHtml = (texto: string): string =>
-  texto
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+/**
+ * Convierte el markdown de un post a HTML, igual que lo hace la web.
+ *
+ * Antes habia aqui un renderizador propio escrito a mano. Se parecia al
+ * markdown de verdad, pero no era el mismo: la vista previa del panel
+ * ensenaba cosas que la web luego no pintaba. El caso mas claro era el
+ * encabezado sin espacio, `#titulo`, que aqui salia como titulo y en la web
+ * salia como texto; y los videos, que aqui se veian y alli no.
+ *
+ * Ahora se usa un motor de markdown de verdad con las mismas opciones que la
+ * web (GFM), y las lineas de video se traducen con las mismas reglas. Lo que
+ * se ve en el panel es lo que se publica.
+ */
 
-const construirEmbedYoutube = (urlVideo: string): string | null => {
-  const coincide = urlVideo.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
-  if (!coincide) return null;
-  return `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${coincide[1]}" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-};
+import { marked } from 'marked';
 
-const construirEmbedVimeo = (urlVideo: string): string | null => {
-  const coincide = urlVideo.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if (!coincide) return null;
-  return `<div class="video-embed"><iframe src="https://player.vimeo.com/video/${coincide[1]}" loading="lazy" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe></div>`;
-};
+marked.setOptions({
+  gfm: true,
+  breaks: false,
+});
 
-const aplicarInline = (linea: string): string =>
-  escaparHtml(linea)
-    .replace(/`([^`]+)`/g, '<code class="bg-ceniza/40 px-1 rounded text-[0.85em]">$1</code>')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" class="rounded-suave my-2 max-w-full" />')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-oliva underline">$1</a>');
-
-const esLineaImagen = (linea: string): boolean => /^!\[[^\]]*\]\([^)]+\)$/.test(linea.trim());
-const esLineaVideo = (linea: string): boolean => /^@(youtube|vimeo|video):/.test(linea.trim());
-
-const renderizarLineaImagen = (linea: string): string => {
-  const coincide = linea.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-  if (!coincide) return '';
-  const caption = coincide[1] ? `<figcaption>${escaparHtml(coincide[1])}</figcaption>` : '';
-  return `<figure><img src="${coincide[2]}" alt="${escaparHtml(coincide[1])}" loading="lazy" />${caption}</figure>`;
-};
-
-const renderizarLineaVideo = (linea: string): string => {
-  const limpia = linea.trim();
-  if (limpia.startsWith('@youtube:')) {
-    const url = limpia.slice('@youtube:'.length).trim();
-    return construirEmbedYoutube(url) ?? `<p><a href="${escaparHtml(url)}" target="_blank" rel="noopener">${escaparHtml(url)}</a></p>`;
+/** Saca el identificador de un video de YouTube de las formas habituales. */
+const idDeYoutube = (url: string): string | null => {
+  const limpia = url.trim();
+  const patrones = [
+    /(?:^|\.)youtube\.com\/watch\?(?:[^#]*&)?v=([A-Za-z0-9_-]{11})/,
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/embed\/([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/,
+  ];
+  for (const patron of patrones) {
+    const encontrado = limpia.match(patron);
+    if (encontrado) return encontrado[1];
   }
-  if (limpia.startsWith('@vimeo:')) {
-    const url = limpia.slice('@vimeo:'.length).trim();
-    return construirEmbedVimeo(url) ?? `<p><a href="${escaparHtml(url)}" target="_blank" rel="noopener">${escaparHtml(url)}</a></p>`;
-  }
-  if (limpia.startsWith('@video:')) {
-    const url = limpia.slice('@video:'.length).trim();
-    return `<div class="video-embed"><video controls preload="metadata"><source src="${escaparHtml(url)}" /></video></div>`;
-  }
-  return '';
+  return null;
 };
 
-export const renderizarMarkdownLigero = (markdown: string): string => {
-  if (!markdown) return '';
-  const lineas = markdown.split('\n');
-  const bloques: string[] = [];
-  let parrafoBuffer: string[] = [];
-  let listaBuffer: string[] = [];
+/**
+ * Traduce las lineas de video antes de pasar por el markdown.
+ *
+ * Estas tres reglas son las mismas, caracter por caracter, que las de
+ * `src/nucleo/articulos.ts` en el proyecto de la web. Si cambia una, cambia la
+ * otra: en cuanto se separen, la vista previa vuelve a mentir.
+ */
+const incrustarVideos = (markdown: string): string =>
+  markdown
+    .split('\n')
+    .map((linea) => {
+      const limpia = linea.trim();
 
-  const cerrarParrafo = () => {
-    if (parrafoBuffer.length > 0) {
-      bloques.push(`<p>${parrafoBuffer.map(aplicarInline).join(' ')}</p>`);
-      parrafoBuffer = [];
-    }
-  };
-  const cerrarLista = () => {
-    if (listaBuffer.length > 0) {
-      bloques.push(`<ul>${listaBuffer.map((item) => `<li>${aplicarInline(item)}</li>`).join('')}</ul>`);
-      listaBuffer = [];
-    }
-  };
+      if (limpia.startsWith('@youtube:')) {
+        const id = idDeYoutube(limpia.slice('@youtube:'.length));
+        // Solo un identificador de 11 caracteres del alfabeto de YouTube:
+        // asi lo que acaba en el `src` nunca es texto libre.
+        if (!id) return linea;
+        return `\n<figure class="video-incrustado"><iframe src="https://www.youtube-nocookie.com/embed/${id}" title="Video" loading="lazy" allowfullscreen></iframe></figure>\n`;
+      }
 
-  for (const linea of lineas) {
-    if (esLineaImagen(linea)) {
-      cerrarParrafo();
-      cerrarLista();
-      bloques.push(renderizarLineaImagen(linea));
-    } else if (esLineaVideo(linea)) {
-      cerrarParrafo();
-      cerrarLista();
-      bloques.push(renderizarLineaVideo(linea));
-    } else if (/^### (.+)/.test(linea)) {
-      cerrarParrafo();
-      cerrarLista();
-      bloques.push(`<h3>${aplicarInline(linea.replace(/^### /, ''))}</h3>`);
-    } else if (/^## (.+)/.test(linea)) {
-      cerrarParrafo();
-      cerrarLista();
-      bloques.push(`<h2>${aplicarInline(linea.replace(/^## /, ''))}</h2>`);
-    } else if (/^# (.+)/.test(linea)) {
-      cerrarParrafo();
-      cerrarLista();
-      bloques.push(`<h1>${aplicarInline(linea.replace(/^# /, ''))}</h1>`);
-    } else if (/^> (.+)/.test(linea)) {
-      cerrarParrafo();
-      cerrarLista();
-      bloques.push(`<blockquote>${aplicarInline(linea.replace(/^> /, ''))}</blockquote>`);
-    } else if (/^[-*] (.+)/.test(linea)) {
-      cerrarParrafo();
-      listaBuffer.push(linea.replace(/^[-*] /, ''));
-    } else if (linea.trim() === '') {
-      cerrarParrafo();
-      cerrarLista();
-    } else {
-      cerrarLista();
-      parrafoBuffer.push(linea);
-    }
-  }
-  cerrarParrafo();
-  cerrarLista();
+      if (limpia.startsWith('@vimeo:')) {
+        const id = limpia.slice('@vimeo:'.length).trim().match(/vimeo\.com\/(?:video\/)?(\d+)/);
+        if (!id) return linea;
+        return `\n<figure class="video-incrustado"><iframe src="https://player.vimeo.com/video/${id[1]}" title="Video" loading="lazy" allowfullscreen></iframe></figure>\n`;
+      }
 
-  return bloques.join('\n');
+      if (limpia.startsWith('@video:')) {
+        const url = limpia.slice('@video:'.length).trim();
+        if (!/^https?:\/\//i.test(url) || /["'<>\s]/.test(url)) return linea;
+        return `\n<figure class="video-incrustado"><video src="${url}" controls preload="metadata"></video></figure>\n`;
+      }
+
+      return linea;
+    })
+    .join('\n');
+
+/**
+ * Markdown de un post a HTML.
+ *
+ * El resultado se inyecta en la vista previa del panel, que solo ve su autor
+ * mientras escribe. La web hace lo mismo con el contenido ya publicado.
+ */
+export const renderizarMarkdownPost = (markdown: string): string => {
+  if (!markdown.trim()) return '';
+  return marked.parse(incrustarVideos(markdown), { async: false }) as string;
 };
+
+/** Nombre anterior, mantenido para no romper lo que ya lo importaba. */
+export const renderizarMarkdownLigero = renderizarMarkdownPost;

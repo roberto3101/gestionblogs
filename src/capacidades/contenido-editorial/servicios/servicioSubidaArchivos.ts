@@ -4,7 +4,14 @@ import { ErrorHttp } from '@integraciones/http/errorHttp';
 import type { Identificador } from '@compartido/tipos/identificador';
 
 export interface ArchivoSubido {
-  id: Identificador;
+  /**
+   * Id de la fila en la biblioteca de medios. Solo llega cuando la subida
+   * indica a que sitio pertenece: sin sitio el archivo se guarda y se sirve,
+   * pero no queda registrado, y entonces no hay id que usar como portada.
+   */
+  id?: Identificador;
+  /** `true` si quedo registrado en la biblioteca y por tanto trae `id`. */
+  registrado: boolean;
   url: string;
   tipo: 'IMAGEN' | 'VIDEO' | 'AUDIO' | 'DOCUMENTO';
   nombre: string;

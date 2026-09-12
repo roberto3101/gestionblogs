@@ -18,7 +18,8 @@ import { useListarEtiquetas } from '../../ganchos/useEtiquetas';
 import { useListarSitios } from '../../ganchos/useSitios';
 import { generarSlug } from '@compartido/utilidades/generarSlug';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
-import { EditorMarkdownDual } from '../../componentes/editor/EditorMarkdownDual';
+import { EditorPost } from '../../componentes/editor/EditorPost';
+import { CampoPortada } from '../../componentes/editor/CampoPortada';
 import { SelectorMultiple } from '../../componentes/editor/SelectorMultiple';
 import { construirUrlPublicaPost } from '@compartido/constantes/sitiosProduccion';
 import type { Identificador } from '@compartido/tipos/identificador';
@@ -51,6 +52,8 @@ export const PaginaEditarPost = () => {
   const [seoDescripcion, asignarSeoDescripcion] = useState('');
   const [categoriasIds, asignarCategoriasIds] = useState<string[]>([]);
   const [etiquetasIds, asignarEtiquetasIds] = useState<string[]>([]);
+  const [portadaId, asignarPortadaId] = useState<Identificador | ''>('');
+  const [portadaUrl, asignarPortadaUrl] = useState('');
   const [marcaTiempoLocal, asignarMarcaTiempoLocal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,6 +65,10 @@ export const PaginaEditarPost = () => {
     asignarAutorId(post.autor_id);
     asignarSeoTitulo(post.seo_titulo ?? '');
     asignarSeoDescripcion(post.seo_descripcion ?? '');
+    asignarPortadaId(post.imagen_portada_id ?? '');
+    // La ficha de administracion devuelve el id de la portada, no su
+    // direccion, asi que aqui no siempre se puede ensenar la miniatura.
+    asignarPortadaUrl((post as { imagen_portada?: { url?: string } }).imagen_portada?.url ?? '');
   }, [post]);
 
   // Mapea {nombre,slug} (lo que devuelve la API) -> IDs (lo que usa el SelectorMultiple)
@@ -102,15 +109,23 @@ export const PaginaEditarPost = () => {
         autor_id: (autorId || undefined) as Identificador | undefined,
         seo_titulo: seoTitulo.trim(),
         seo_descripcion: seoDescripcion.trim(),
+        // null quita la portada; undefined la dejaria como estaba.
+        imagen_portada_id: (portadaId || null) as Identificador | null,
       });
-      if (categoriasIds.length > 0 || categoriasIds.length === 0) {
-        await editarCategorias.mutateAsync({ categorias_ids: categoriasIds });
-      }
-      if (etiquetasIds.length > 0 || etiquetasIds.length === 0) {
-        await editarEtiquetas.mutateAsync({ etiquetas_ids: etiquetasIds });
-      }
+      // Se envian siempre, tambien vacias: es como se quita un tema.
+      await editarCategorias.mutateAsync({ categorias_ids: categoriasIds });
+      await editarEtiquetas.mutateAsync({ etiquetas_ids: etiquetasIds });
       asignarMarcaTiempoLocal(new Date().toISOString());
-    } catch {}
+    } catch (error) {
+      // Antes este catch estaba vacio: si fallaba al asignar el tema, el post
+      // se quedaba guardado sin el y nadie se enteraba.
+      publicar({
+        tono: 'error',
+        titulo: 'No se pudo guardar todo',
+        detalle: error instanceof Error ? error.message : 'Vuelve a intentarlo.',
+      });
+      throw error;
+    }
   };
 
   const publicarAhora = async () => {
@@ -155,12 +170,43 @@ export const PaginaEditarPost = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6">
-        <div className="space-y-4">
-          <CampoTexto etiqueta="Título" value={titulo} onChange={(e) => asignarTitulo(e.target.value)} />
-          <EditorMarkdownDual valor={contenido} alCambiar={asignarContenido} titulo={titulo} resumen={resumen} sitioId={post.sitio_id} />
-          {mensajeError && <AvisoError titulo="No pudimos guardar">{mensajeError}</AvisoError>}
+      <Lamina className="mb-4 p-5 space-y-4">
+        <CampoTexto etiqueta="Título" value={titulo} onChange={(e) => asignarTitulo(e.target.value)} />
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <CampoPortada
+            valorId={portadaId}
+            valorUrl={portadaUrl}
+            alCambiar={(id, url) => {
+              asignarPortadaId(id);
+              asignarPortadaUrl(url);
+            }}
+            sitioId={post.sitio_id}
+          />
+          <AreaTexto
+            etiqueta="Entradilla"
+            value={resumen}
+            onChange={(e) => asignarResumen(e.target.value)}
+            ayuda="Dos líneas. Es lo que se lee en la lista de artículos."
+          />
         </div>
+      </Lamina>
+
+      <div className="mb-4">
+        <EditorPost
+          valor={contenido}
+          alCambiar={asignarContenido}
+          titulo={titulo}
+          resumen={resumen}
+          urlPortada={portadaUrl || null}
+          autor={autores.data?.elementos.find((a) => a.id === autorId)?.nombre_publico}
+          tema={categorias.data?.elementos.find((c) => categoriasIds.includes(c.id))?.nombre}
+          sitioId={post.sitio_id}
+        />
+        {mensajeError && <div className="mt-4"><AvisoError titulo="No pudimos guardar">{mensajeError}</AvisoError></div>}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,320px] gap-6">
+        <div />
 
         <aside className="space-y-4">
           <Lamina className="p-5 space-y-4">
@@ -184,7 +230,6 @@ export const PaginaEditarPost = () => {
               onChange={(e) => asignarSlug(generarSlug(e.target.value))}
               ayuda="Así se verá al final de la dirección. Solo minúsculas y guiones."
             />
-            <AreaTexto etiqueta="Resumen" value={resumen} onChange={(e) => asignarResumen(e.target.value)} />
           </Lamina>
 
           <Lamina className="p-5 space-y-4">
