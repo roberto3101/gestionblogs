@@ -442,12 +442,24 @@ export const EditorPost = ({
         ))}
       </div>
 
-      <div className="hidden gap-4 xl:grid xl:grid-cols-2">
-        {panelEscribir}
-        {panelVista}
+      {/*
+       * Cada panel se monta UNA sola vez y se esconde con CSS.
+       *
+       * Antes se pintaban dos veces, una rama para pantalla ancha y otra para
+       * estrecha. Eso dejaba dos <textarea> en la pagina compartiendo el mismo
+       * ref, asi que el ref acababa apuntando a la copia escondida: los
+       * botones de formato leian la seleccion de un area que nadie estaba
+       * usando y escribian "**negrita**" al final del texto en vez de envolver
+       * la palabra marcada.
+       */}
+      <div className="grid gap-4 xl:grid-cols-2">
+        <div className={unirClases(vistaEstrecha === 'escribir' ? 'block' : 'hidden', 'xl:block')}>
+          {panelEscribir}
+        </div>
+        <div className={unirClases(vistaEstrecha === 'ver' ? 'block' : 'hidden', 'xl:block')}>
+          {panelVista}
+        </div>
       </div>
-
-      <div className="xl:hidden">{vistaEstrecha === 'escribir' ? panelEscribir : panelVista}</div>
     </div>
   );
 };

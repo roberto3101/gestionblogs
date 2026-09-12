@@ -16,7 +16,9 @@ import { marked } from 'marked';
 
 marked.setOptions({
   gfm: true,
-  breaks: false,
+  // Un Enter corta la linea, igual que en la web (remark-breaks alli).
+  // Sin esto, tres lineas sueltas se publicaban como un parrafo corrido.
+  breaks: true,
 });
 
 /** Saca el identificador de un video de YouTube de las formas habituales. */
