@@ -60,12 +60,24 @@ conversor.addRule('saltoSimple', {
 /** Lo que se guarda en el post, a partir de lo que hay en el editor. */
 export const htmlAMarkdown = (html: string): string => {
   if (!html || html === '<p></p>') return '';
-  return conversor
-    .turndown(html)
-    // Turndown deja hasta tres saltos entre bloques; con dos basta y el
-    // markdown queda legible si alguien lo mira por debajo.
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  return (
+    conversor
+      .turndown(html)
+      // Turndown escribe los puntos de una lista como "-   texto" y deja una
+      // linea de espacios detras de cada uno, porque el editor envuelve el
+      // contenido de cada punto en un parrafo. Eso vuelve la lista «suelta» y
+      // la web le pone un hueco entre puntos que nadie pidio. Se aprieta aqui.
+      .replace(/^(\s*)[-*][ 	]{2,}/gm, '$1- ')
+      // Lineas que solo tienen espacios: fuera.
+      .replace(/^[ 	]+$/gm, '')
+      // Con la opcion de cortar linea en cada salto, un espacio al final de
+      // linea sobra y puede colarse como un salto de mas.
+      .replace(/[ 	]+$/gm, '')
+      // Turndown deja hasta tres saltos entre bloques; con dos basta y el
+      // markdown queda legible si alguien lo mira por debajo.
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
 };
 
 /**
