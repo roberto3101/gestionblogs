@@ -1,7 +1,27 @@
+import { useState } from 'react';
 import { TituloEditorial } from '@compartido/interfaz/primitivas/TituloEditorial';
 import { FormularioInicioSesion } from '../componentes/FormularioInicioSesion';
 
-export const PaginaIniciarSesion = () => (
+/**
+ * Lee el aviso que deja el cliente HTTP cuando echa a alguien por caducidad.
+ *
+ * Se consume al leerlo: si recarga la pantalla de entrada, el aviso no vuelve
+ * a salir, porque a esas alturas ya no aporta nada.
+ */
+const leerAvisoDeCaducidad = (): boolean => {
+  try {
+    const habia = sessionStorage.getItem('panel.sesionCaducada') === '1';
+    if (habia) sessionStorage.removeItem('panel.sesionCaducada');
+    return habia;
+  } catch {
+    return false;
+  }
+};
+
+export const PaginaIniciarSesion = () => {
+  const [sesionCaducada] = useState(leerAvisoDeCaducidad);
+
+  return (
   <div className="min-h-screen grid lg:grid-cols-[1.1fr,1fr]">
     <aside className="relative hidden lg:flex flex-col justify-between p-10 bg-tinta text-lienzo">
       <div className="flex items-center gap-2">
@@ -28,10 +48,19 @@ export const PaginaIniciarSesion = () => (
         <TituloEditorial nivel={1} preTitulo="Acceso al panel">
           Bienvenido de vuelta
         </TituloEditorial>
-        <p className="text-grafito text-[15px] leading-relaxed">
-          Ingresa con la cuenta que te entrego tu administrador. Si es tu primera vez,
-          revisa tu correo para verificar la cuenta antes de continuar.
-        </p>
+        {sesionCaducada ? (
+          <div className="rounded-suave border border-ambar/40 bg-ambar/5 px-4 py-3">
+            <p className="text-[15px] leading-relaxed text-grafito">
+              <strong className="text-tinta">Se te cerró la sesión por tiempo.</strong> Entra
+              otra vez y sigues donde lo dejaste: lo que estabas escribiendo se guardó.
+            </p>
+          </div>
+        ) : (
+          <p className="text-grafito text-[15px] leading-relaxed">
+            Ingresa con la cuenta que te entrego tu administrador. Si es tu primera vez,
+            revisa tu correo para verificar la cuenta antes de continuar.
+          </p>
+        )}
         <FormularioInicioSesion />
         <p className="text-xs text-humo">
           Al continuar aceptas registrar tu actividad en la pista de auditoria.
@@ -40,3 +69,4 @@ export const PaginaIniciarSesion = () => (
     </main>
   </div>
 );
+};
