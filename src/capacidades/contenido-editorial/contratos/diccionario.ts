@@ -582,6 +582,154 @@ export const camposDeVideo = new Set(['video', 'origen']);
 export const camposDeArchivo = new Set(['archivo', 'archivoPdf']);
 
 /** Campos que es mejor no tocar: los usa el programa para funcionar. */
+/**
+ * Campos cuyo valor NO es texto que se lea en la web, sino el nombre de algo
+ * que la web ya tiene: un dibujo del juego de iconos, o uno de los botones
+ * definidos en «Botones y textos repetidos».
+ *
+ * Antes salian como una caja de texto libre con "solicitarDemostracion" o
+ * "ciudad" dentro. Cualquiera escribiria ahi "Pide una demo" y el boton
+ * dejaria de funcionar, o el dibujo desapareceria, sin ningun aviso. Ahora se
+ * elige de una lista y no hay forma de escribir algo que la web no conozca.
+ *
+ * Si en la web se anade un icono o un boton nuevo, hay que anadirlo aqui:
+ * los iconos viven en src/nucleo/iconos/ y los botones en
+ * src/idiomas/<idioma>/comunes/acciones.json del proyecto de la web.
+ */
+export interface OpcionDeCampo {
+  valor: string;
+  etiqueta: string;
+}
+
+const ICONOS_DISPONIBLES: OpcionDeCampo[] = [
+  { valor: 'alerta', etiqueta: 'alerta' },
+  { valor: 'alertaSello', etiqueta: 'alertaSello' },
+  { valor: 'analisis', etiqueta: 'analisis' },
+  { valor: 'analizar', etiqueta: 'analizar' },
+  { valor: 'ancla', etiqueta: 'ancla' },
+  { valor: 'articulo', etiqueta: 'articulo' },
+  { valor: 'bombilla', etiqueta: 'bombilla' },
+  { valor: 'buscar', etiqueta: 'buscar' },
+  { valor: 'cajaLogistica', etiqueta: 'cajaLogistica' },
+  { valor: 'calendario', etiqueta: 'calendario' },
+  { valor: 'camara', etiqueta: 'camara' },
+  { valor: 'camion', etiqueta: 'camion' },
+  { valor: 'candadoEscudo', etiqueta: 'candadoEscudo' },
+  { valor: 'carrito', etiqueta: 'carrito' },
+  { valor: 'casco', etiqueta: 'casco' },
+  { valor: 'casoExito', etiqueta: 'casoExito' },
+  { valor: 'cerebro', etiqueta: 'cerebro' },
+  { valor: 'cerrar', etiqueta: 'cerrar' },
+  { valor: 'chevronAbajo', etiqueta: 'chevronAbajo' },
+  { valor: 'chevronDerecha', etiqueta: 'chevronDerecha' },
+  { valor: 'chevronIzquierda', etiqueta: 'chevronIzquierda' },
+  { valor: 'chip', etiqueta: 'chip' },
+  { valor: 'chipCirculo', etiqueta: 'chipCirculo' },
+  { valor: 'ciudad', etiqueta: 'ciudad' },
+  { valor: 'ciudadEscudo', etiqueta: 'ciudadEscudo' },
+  { valor: 'construccion', etiqueta: 'construccion' },
+  { valor: 'correo', etiqueta: 'correo' },
+  { valor: 'crecimiento', etiqueta: 'crecimiento' },
+  { valor: 'descargar', etiqueta: 'descargar' },
+  { valor: 'detectar', etiqueta: 'detectar' },
+  { valor: 'diana', etiqueta: 'diana' },
+  { valor: 'documento', etiqueta: 'documento' },
+  { valor: 'dron', etiqueta: 'dron' },
+  { valor: 'dronCirculo', etiqueta: 'dronCirculo' },
+  { valor: 'dronVuelo', etiqueta: 'dronVuelo' },
+  { valor: 'edificio', etiqueta: 'edificio' },
+  { valor: 'educacion', etiqueta: 'educacion' },
+  { valor: 'energia', etiqueta: 'energia' },
+  { valor: 'engranaje', etiqueta: 'engranaje' },
+  { valor: 'engranajeAro', etiqueta: 'engranajeAro' },
+  { valor: 'equis', etiqueta: 'equis' },
+  { valor: 'escudo', etiqueta: 'escudo' },
+  { valor: 'escudoCheck', etiqueta: 'escudoCheck' },
+  { valor: 'escudoIa', etiqueta: 'escudoIa' },
+  { valor: 'escudoOjo', etiqueta: 'escudoOjo' },
+  { valor: 'escudoPin', etiqueta: 'escudoPin' },
+  { valor: 'finanzas', etiqueta: 'finanzas' },
+  { valor: 'flechaAbajo', etiqueta: 'flechaAbajo' },
+  { valor: 'flechaArriba', etiqueta: 'flechaArriba' },
+  { valor: 'flechaDerecha', etiqueta: 'flechaDerecha' },
+  { valor: 'gestion', etiqueta: 'gestion' },
+  { valor: 'globo', etiqueta: 'globo' },
+  { valor: 'grafico', etiqueta: 'grafico' },
+  { valor: 'guia', etiqueta: 'guia' },
+  { valor: 'hoja', etiqueta: 'hoja' },
+  { valor: 'industria', etiqueta: 'industria' },
+  { valor: 'infraestructura', etiqueta: 'infraestructura' },
+  { valor: 'instagram', etiqueta: 'instagram' },
+  { valor: 'integracion', etiqueta: 'integracion' },
+  { valor: 'libro', etiqueta: 'libro' },
+  { valor: 'linkedin', etiqueta: 'linkedin' },
+  { valor: 'logistica', etiqueta: 'logistica' },
+  { valor: 'menu', etiqueta: 'menu' },
+  { valor: 'mineria', etiqueta: 'mineria' },
+  { valor: 'municipio', etiqueta: 'municipio' },
+  { valor: 'noticia', etiqueta: 'noticia' },
+  { valor: 'ojo', etiqueta: 'ojo' },
+  { valor: 'personas', etiqueta: 'personas' },
+  { valor: 'pieza', etiqueta: 'pieza' },
+  { valor: 'procesador', etiqueta: 'procesador' },
+  { valor: 'puesto', etiqueta: 'puesto' },
+  { valor: 'red', etiqueta: 'red' },
+  { valor: 'rejilla', etiqueta: 'rejilla' },
+  { valor: 'reloj', etiqueta: 'reloj' },
+  { valor: 'relojAro', etiqueta: 'relojAro' },
+  { valor: 'reproducir', etiqueta: 'reproducir' },
+  { valor: 'responder', etiqueta: 'responder' },
+  { valor: 'respuesta', etiqueta: 'respuesta' },
+  { valor: 'salud', etiqueta: 'salud' },
+  { valor: 'selloCalidad', etiqueta: 'selloCalidad' },
+  { valor: 'selloIa', etiqueta: 'selloIa' },
+  { valor: 'selloInfo', etiqueta: 'selloInfo' },
+  { valor: 'selloSeguridad', etiqueta: 'selloSeguridad' },
+  { valor: 'senal', etiqueta: 'senal' },
+  { valor: 'senalCaja', etiqueta: 'senalCaja' },
+  { valor: 'sensor', etiqueta: 'sensor' },
+  { valor: 'sistemas', etiqueta: 'sistemas' },
+  { valor: 'sobre', etiqueta: 'sobre' },
+  { valor: 'soporte', etiqueta: 'soporte' },
+  { valor: 'telefono', etiqueta: 'telefono' },
+  { valor: 'ubicacion', etiqueta: 'ubicacion' },
+  { valor: 'vivienda', etiqueta: 'vivienda' },
+  { valor: 'webinar', etiqueta: 'webinar' },
+  { valor: 'youtube', etiqueta: 'youtube' },
+];
+
+const BOTONES_DISPONIBLES: OpcionDeCampo[] = [
+  { valor: 'solicitarDemostracion', etiqueta: 'Solicitar demostración' },
+  { valor: 'solicitarReunion', etiqueta: 'Solicitar una reunión' },
+  { valor: 'solicitarPropuesta', etiqueta: 'Solicitar una propuesta' },
+  { valor: 'solicitarConsulta', etiqueta: 'Solicitar una consulta' },
+  { valor: 'conocerPlataforma', etiqueta: 'Conocer la plataforma' },
+  { valor: 'conocerMas', etiqueta: 'Conocer más' },
+  { valor: 'verMas', etiqueta: 'Ver más' },
+  { valor: 'verCaso', etiqueta: 'Ver caso' },
+  { valor: 'verCasoCompleto', etiqueta: 'Ver caso completo' },
+  { valor: 'verSoluciones', etiqueta: 'Ver soluciones' },
+  { valor: 'leerMas', etiqueta: 'Leer más' },
+  { valor: 'verVideo', etiqueta: 'Ver vídeo' },
+  { valor: 'verTodos', etiqueta: 'Ver todos' },
+  { valor: 'verTodas', etiqueta: 'Ver todas' },
+  { valor: 'contactanos', etiqueta: 'Contáctanos' },
+  { valor: 'contactarAhora', etiqueta: 'Contactar ahora' },
+  { valor: 'descargarBrochure', etiqueta: 'Descargar brochure' },
+  { valor: 'descargarPdf', etiqueta: 'Descargar PDF' },
+  { valor: 'suscribirme', etiqueta: 'Suscribirme' },
+  { valor: 'anterior', etiqueta: 'Anterior' },
+  { valor: 'siguiente', etiqueta: 'Siguiente' },
+];
+
+export const opcionesDeCampo = (nombre: string): OpcionDeCampo[] | null => {
+  if (nombre === 'icono') return ICONOS_DISPONIBLES;
+  if (nombre === 'accion' || nombre === 'accionPrincipal' || nombre === 'accionSecundaria') {
+    return BOTONES_DISPONIBLES;
+  }
+  return null;
+};
+
 export const camposTecnicos = new Set(['clave', 'ambitos', 'categorias', 'bandera', 'red', 'formato']);
 
 /** Convierte "palabrasLaterales" en "Palabras laterales" como último recurso. */

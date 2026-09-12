@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { renderizarMarkdownPost } from '@compartido/utilidades/renderizadorMarkdown';
 
 interface PropiedadesVistaPost {
@@ -278,7 +279,7 @@ export const VistaPostComoSeVera = ({
     <div
       className={
         pantallaCompleta
-          ? 'fixed inset-0 z-50 flex flex-col bg-tinta/95 p-4'
+          ? 'fixed inset-0 z-[100] flex flex-col bg-tinta/95 p-4'
           : 'flex flex-col overflow-hidden rounded-suave border border-ceniza'
       }
     >
@@ -336,7 +337,10 @@ export const VistaPostComoSeVera = ({
   return (
     <>
       <style>{ESTILOS}</style>
-      {marco}
+      {/* Igual que en la vista previa de las paginas: a pantalla completa el
+          recuadro se cuelga de <body> para no quedar por debajo de la barra
+          lateral, que vive en otro contexto de apilamiento. */}
+      {pantallaCompleta ? createPortal(marco, document.body) : marco}
     </>
   );
 };

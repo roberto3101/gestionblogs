@@ -9,6 +9,7 @@ import {
   camposDeFoto,
   camposDeVideo,
   camposTecnicos,
+  opcionesDeCampo,
   nombreDeCampo,
 } from '../../contratos/diccionario';
 import { CampoArchivo } from './CampoArchivo';
@@ -96,6 +97,38 @@ export const CampoDocumento = ({
         />
       );
     }
+    // Campos que guardan el nombre de un icono o de un boton de la web: se
+    // eligen de una lista, para no poder escribir algo que la web no conozca.
+    const opciones = opcionesDeCampo(nombre);
+    if (opciones) {
+      const conocido = opciones.some((o) => o.valor === valor);
+      return (
+        <label className="flex flex-col gap-1.5">
+          <span className="meta-tipografia text-humo">{humanizar(nombre)}</span>
+          <select
+            value={conocido ? valor : ''}
+            onChange={(evento) => alCambiar(evento.target.value)}
+            className="h-10 rounded-suave border border-ceniza bg-papel px-3 text-sm text-tinta outline-none focus:border-tinta"
+          >
+            <option value="">Sin elegir</option>
+            {!conocido && valor !== '' && (
+              // Un valor que la web ya no reconoce se sigue enseñando, para
+              // que se vea que hay algo raro en vez de borrarlo en silencio.
+              <option value={valor}>{valor} (la web no lo reconoce)</option>
+            )}
+            {opciones.map((o) => (
+              <option key={o.valor} value={o.valor}>
+                {o.etiqueta}
+              </option>
+            ))}
+          </select>
+          {nombre === 'icono' && (
+            <span className="text-xs text-humo">El dibujo que acompaña a este texto.</span>
+          )}
+        </label>
+      );
+    }
+
     // Lo que el programa usa para funcionar se muestra, pero apagado.
     if (camposTecnicos.has(nombre)) {
       return (

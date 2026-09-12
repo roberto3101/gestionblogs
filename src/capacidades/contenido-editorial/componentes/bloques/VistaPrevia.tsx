@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Boton } from '@compartido/interfaz/primitivas/Boton';
 import { unirClases } from '@compartido/utilidades/unirClases';
 import { configuracionEntorno } from '@compartido/constantes/configuracionEntorno';
@@ -132,12 +133,12 @@ export const VistaPrevia = ({
     return () => window.removeEventListener('keydown', alPulsar);
   }, [pantallaCompleta]);
 
-  return (
+  const recuadro = (
     <aside
       className={unirClases(
         'flex flex-col bg-papel overflow-hidden',
         pantallaCompleta
-          ? 'fixed inset-0 z-50 p-0'
+          ? 'fixed inset-0 z-[100] p-0'
           : 'border border-ceniza rounded-suave',
       )}
     >
@@ -239,4 +240,15 @@ export const VistaPrevia = ({
       </footer>
     </aside>
   );
+
+  /*
+   * A pantalla completa el recuadro se cuelga de <body>.
+   *
+   * Con `fixed inset-0 z-50` dentro del contenido, el panel si ocupaba toda la
+   * ventana pero se pintaba POR DEBAJO de la barra lateral: estaban en
+   * contextos de apilamiento distintos y ahi el z-index no compite. El
+   * resultado era una vista previa a pantalla completa cuyo boton de salir
+   * quedaba tapado por la cabecera del panel.
+   */
+  return pantallaCompleta ? createPortal(recuadro, document.body) : recuadro;
 };

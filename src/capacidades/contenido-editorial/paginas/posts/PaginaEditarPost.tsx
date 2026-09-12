@@ -153,17 +153,16 @@ export const PaginaEditarPost = () => {
         <div className="space-y-1.5 min-w-0">
           <Migajas
             items={[
-              { etiqueta: 'Redacción', ruta: '/panel/posts' },
-              { etiqueta: 'Posts', ruta: '/panel/posts' },
+                            { etiqueta: 'Artículos del blog', ruta: '/panel/posts' },
               { etiqueta: titulo || 'Editar' },
             ]}
           />
-          <TituloEditorial nivel={2}>Editar post</TituloEditorial>
+          <TituloEditorial nivel={2}>Editar el artículo</TituloEditorial>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <IndicadorAutosalvado marcaTiempo={marcaTiempoLocal} />
           <Boton tono="discreto" tamano="compacto" onClick={() => navegar(`/panel/posts/${post.id}`)}>
-            Volver al detalle
+            Ver la ficha
           </Boton>
           <Boton tono="peligro" tamano="compacto" cargando={eliminacion.isPending} onClick={() => asignarConfirmandoBorrar(true)}>
             Eliminar
