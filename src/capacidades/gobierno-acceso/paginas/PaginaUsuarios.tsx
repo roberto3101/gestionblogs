@@ -83,6 +83,10 @@ export const PaginaUsuarios = () => {
   const [usuarioDetalle, asignarUsuarioDetalle] = useState<UsuarioConAccesos | null>(null);
   const [empresaNueva, asignarEmpresaNueva] = useState<Identificador | ''>('');
   const [rolNuevo, asignarRolNuevo] = useState<Identificador | ''>('');
+  // Acceso que se va a retirar, mientras se confirma.
+  const [porRevocar, asignarPorRevocar] = useState<
+    { alcanceId: Identificador; empresa: string; rol: string } | null
+  >(null);
 
   const opcionesRoles = useMemo(
     () => (roles.data?.elementos ?? []).map((r) => ({ valor: r.id, etiqueta: r.nombre })),
@@ -526,11 +530,7 @@ export const PaginaUsuarios = () => {
                       tono="peligro"
                       tamano="compacto"
                       cargando={revocacion.isPending && revocacion.variables === a.alcanceId}
-                      onClick={() => {
-                        if (window.confirm(`¿Revocar el acceso a ${a.empresa} (${a.rol})?`)) {
-                          revocacion.mutate(a.alcanceId);
-                        }
-                      }}
+                      onClick={() => asignarPorRevocar(a)}
                     >
                       Revocar
                     </Boton>
@@ -563,6 +563,27 @@ export const PaginaUsuarios = () => {
           </form>
         </Lamina>
       )}
+
+      <DialogoConfirmacion
+        abierto={porRevocar !== null}
+        titulo="¿Retirar este acceso?"
+        mensaje={
+          <>
+            Esta persona dejará de poder entrar a <strong>{porRevocar?.empresa}</strong> como{' '}
+            <strong>{porRevocar?.rol}</strong>. Su cuenta sigue existiendo y puedes volver a
+            darle acceso cuando quieras.
+          </>
+        }
+        textoConfirmar="Sí, retirar"
+        textoCancelar="No, dejarlo"
+        tonoConfirmar="peligro"
+        cargando={revocacion.isPending}
+        alConfirmar={() => {
+          if (!porRevocar) return;
+          revocacion.mutate(porRevocar.alcanceId, { onSettled: () => asignarPorRevocar(null) });
+        }}
+        alCancelar={() => asignarPorRevocar(null)}
+      />
     </div>
   );
 };

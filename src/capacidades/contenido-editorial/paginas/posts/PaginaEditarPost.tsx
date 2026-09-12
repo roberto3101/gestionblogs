@@ -20,6 +20,7 @@ import { generarSlug } from '@compartido/utilidades/generarSlug';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
 import { EditorPost } from '../../componentes/editor/EditorPost';
 import { CampoPortada } from '../../componentes/editor/CampoPortada';
+import { DialogoConfirmacion } from '@compartido/interfaz/retroalimentacion/DialogoConfirmacion';
 import { SelectorMultiple } from '../../componentes/editor/SelectorMultiple';
 import { construirUrlPublicaPost } from '@compartido/constantes/sitiosProduccion';
 import type { Identificador } from '@compartido/tipos/identificador';
@@ -54,6 +55,7 @@ export const PaginaEditarPost = () => {
   const [etiquetasIds, asignarEtiquetasIds] = useState<string[]>([]);
   const [portadaId, asignarPortadaId] = useState<Identificador | ''>('');
   const [portadaUrl, asignarPortadaUrl] = useState('');
+  const [confirmandoBorrar, asignarConfirmandoBorrar] = useState(false);
   const [marcaTiempoLocal, asignarMarcaTiempoLocal] = useState<string | null>(null);
 
   useEffect(() => {
@@ -138,7 +140,6 @@ export const PaginaEditarPost = () => {
   };
 
   const eliminarYVolver = async () => {
-    if (!window.confirm('¿Eliminar este post? Esta acción es lógica (se puede recuperar).')) return;
     await eliminacion.mutateAsync(post.id);
     navegar('/panel/posts', { replace: true });
   };
@@ -164,7 +165,7 @@ export const PaginaEditarPost = () => {
           <Boton tono="discreto" tamano="compacto" onClick={() => navegar(`/panel/posts/${post.id}`)}>
             Volver al detalle
           </Boton>
-          <Boton tono="peligro" tamano="compacto" cargando={eliminacion.isPending} onClick={eliminarYVolver}>
+          <Boton tono="peligro" tamano="compacto" cargando={eliminacion.isPending} onClick={() => asignarConfirmandoBorrar(true)}>
             Eliminar
           </Boton>
         </div>
@@ -265,6 +266,26 @@ export const PaginaEditarPost = () => {
           </div>
         </aside>
       </div>
+
+      <DialogoConfirmacion
+        abierto={confirmandoBorrar}
+        titulo="¿Borrar este artículo?"
+        mensaje={
+          <>
+            Se va a quitar <strong>{post.titulo}</strong>. No se borra del todo: si te
+            arrepientes, se puede recuperar.
+          </>
+        }
+        textoConfirmar="Sí, borrar"
+        textoCancelar="No, dejarlo"
+        tonoConfirmar="peligro"
+        cargando={eliminacion.isPending}
+        alConfirmar={() => {
+          asignarConfirmandoBorrar(false);
+          void eliminarYVolver();
+        }}
+        alCancelar={() => asignarConfirmandoBorrar(false)}
+      />
     </div>
   );
 };

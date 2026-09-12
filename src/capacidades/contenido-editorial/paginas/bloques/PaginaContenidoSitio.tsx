@@ -31,6 +31,7 @@ import {
   paginaDe,
   paginas,
 } from '../../contratos/diccionario';
+import { DialogoConfirmacion } from '@compartido/interfaz/retroalimentacion/DialogoConfirmacion';
 
 /**
  * Edición de los textos y las fotos de la web.
@@ -95,6 +96,10 @@ export const PaginaContenidoSitio = () => {
   const [claveAbierta, asignarClaveAbierta] = useState<string | null>(null);
   const [borrador, asignarBorrador] = useState<DocumentoBloque | null>(null);
   const [verWeb, asignarVerWeb] = useState(true);
+  // Que hay que deshacer: un trozo concreto o todo lo guardado sin publicar.
+  const [porDeshacer, asignarPorDeshacer] = useState<
+    { alcance: 'todos' } | { alcance: 'uno'; clave: string } | null
+  >(null);
   const [vaciosDetectados, asignarVaciosDetectados] = useState<
     ReturnType<typeof elementosVacios>
   >([]);
@@ -190,14 +195,7 @@ export const PaginaContenidoSitio = () => {
             {pendientes.length > 0 && (
               <Boton
                 tono="discreto"
-                onClick={() => {
-                  const seguro = window.confirm(
-                    `Vas a deshacer ${pendientes.length} cambio(s) que guardaste pero no llegaste a publicar. La web no se ve afectada. ¿Seguimos?`,
-                  );
-                  if (!seguro) return;
-                  pendientes.forEach((b) => descarte.mutate({ idioma, clave: b.clave }));
-                  cerrar();
-                }}
+                onClick={() => asignarPorDeshacer({ alcance: 'todos' })}
               >
                 Deshacer lo guardado
               </Boton>
@@ -379,16 +377,9 @@ export const PaginaContenidoSitio = () => {
                               {bloque.tiene_pendiente && (
                                 <Boton
                                   tono="peligro"
-                                  onClick={() => {
-                                    const seguro = window.confirm(
-                                      'Vas a deshacer lo que guardaste aquí y volver a lo que hay en la web. ¿Seguimos?',
-                                    );
-                                    if (!seguro) return;
-                                    descarte.mutate(
-                                      { idioma, clave: bloque.clave },
-                                      { onSuccess: cerrar },
-                                    );
-                                  }}
+                                  onClick={() =>
+                                    asignarPorDeshacer({ alcance: 'uno', clave: bloque.clave })
+                                  }
                                 >
                                   Deshacer
                                 </Boton>
@@ -427,6 +418,46 @@ export const PaginaContenidoSitio = () => {
           )}
         </div>
       )}
+
+      <DialogoConfirmacion
+        abierto={porDeshacer !== null}
+        titulo="¿Deshacer lo guardado?"
+        mensaje={
+          porDeshacer?.alcance === 'todos' ? (
+            <>
+              Vas a tirar {pendientes.length}{' '}
+              {pendientes.length === 1 ? 'cambio guardado' : 'cambios guardados'} que todavía no
+              habías publicado. La web no cambia: sigue como está ahora.
+            </>
+          ) : (
+            <>
+              Vas a tirar lo que guardaste en este trozo y volver a lo que hay publicado en la
+              web ahora mismo.
+            </>
+          )
+        }
+        textoConfirmar="Sí, deshacer"
+        textoCancelar="No, seguir editando"
+        tonoConfirmar="peligro"
+        cargando={descarte.isPending}
+        alConfirmar={() => {
+          if (!porDeshacer) return;
+          if (porDeshacer.alcance === 'todos') {
+            pendientes.forEach((b) => descarte.mutate({ idioma, clave: b.clave }));
+            asignarPorDeshacer(null);
+            cerrar();
+            return;
+          }
+          descarte.mutate(
+            { idioma, clave: porDeshacer.clave },
+            {
+              onSuccess: cerrar,
+              onSettled: () => asignarPorDeshacer(null),
+            },
+          );
+        }}
+        alCancelar={() => asignarPorDeshacer(null)}
+      />
     </div>
   );
 };

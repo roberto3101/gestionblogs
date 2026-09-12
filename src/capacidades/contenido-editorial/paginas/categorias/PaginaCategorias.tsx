@@ -13,12 +13,14 @@ import { useEditarCategoria, useEliminarCategoria } from '../../ganchos/useEdici
 import { useSitioActivo } from '@plataforma/contexto/contextoSitioActivo';
 import { FormularioCategoria } from '../../componentes/listado/FormularioCategoria';
 import { ErrorHttp } from '@integraciones/http/errorHttp';
+import { DialogoConfirmacion } from '@compartido/interfaz/retroalimentacion/DialogoConfirmacion';
 import type { Categoria } from '../../contratos/categoria';
 
 export const PaginaCategorias = () => {
   const { sitioActivo } = useSitioActivo();
   const [mostrarCrear, asignarMostrarCrear] = useState(false);
   const [enEdicion, asignarEnEdicion] = useState<Categoria | null>(null);
+  const [aBorrar, asignarABorrar] = useState<Categoria | null>(null);
   const consulta = useListarCategorias(sitioActivo?.id ?? null);
   const eliminacion = useEliminarCategoria();
 
@@ -39,12 +41,7 @@ export const PaginaCategorias = () => {
             tono="peligro"
             tamano="compacto"
             cargando={eliminacion.isPending && eliminacion.variables === c.id}
-            onClick={() => {
-              const confirmacion = window.confirm(
-                `¿Eliminar la categoría "${c.nombre}"? Los posts que la tengan asignada perderán esa categoría (los posts NO se eliminan).`,
-              );
-              if (confirmacion) eliminacion.mutate(c.id);
-            }}
+            onClick={() => asignarABorrar(c)}
           >
             Eliminar
           </Boton>
@@ -95,6 +92,27 @@ export const PaginaCategorias = () => {
       {consulta.data && consulta.data.elementos.length > 0 && (
         <Tabla columnas={columnas} filas={consulta.data.elementos} obtenerLlave={(c) => c.id} />
       )}
+
+      <DialogoConfirmacion
+        abierto={aBorrar !== null}
+        titulo="¿Borrar este tema?"
+        mensaje={
+          <>
+            Se va a quitar el tema <strong>{aBorrar?.nombre}</strong>. Los artículos que lo
+            tuvieran se quedan como están, solo pierden esa etiqueta: no se borra ningún
+            artículo.
+          </>
+        }
+        textoConfirmar="Sí, borrar"
+        textoCancelar="No, dejarlo"
+        tonoConfirmar="peligro"
+        cargando={eliminacion.isPending}
+        alConfirmar={() => {
+          if (!aBorrar) return;
+          eliminacion.mutate(aBorrar.id, { onSettled: () => asignarABorrar(null) });
+        }}
+        alCancelar={() => asignarABorrar(null)}
+      />
     </div>
   );
 };
