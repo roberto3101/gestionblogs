@@ -17,18 +17,18 @@
  * una marca propia y se vuelven a plegar al guardar.
  */
 
-import TurndownService from 'turndown';
-import { renderizarMarkdownPost } from './renderizadorMarkdown';
+import TurndownService from "turndown";
+import { renderizarMarkdownPost } from "./renderizadorMarkdown";
 
 /** Marca que llevan los bloques de video mientras estan en el editor. */
-const ATRIBUTO_VIDEO = 'data-video';
+const ATRIBUTO_VIDEO = "data-video";
 
 const conversor = new TurndownService({
-  headingStyle: 'atx',
-  bulletListMarker: '-',
-  codeBlockStyle: 'fenced',
-  emDelimiter: '*',
-  strongDelimiter: '**',
+  headingStyle: "atx",
+  bulletListMarker: "-",
+  codeBlockStyle: "fenced",
+  emDelimiter: "*",
+  strongDelimiter: "**",
 });
 
 /**
@@ -37,11 +37,12 @@ const conversor = new TurndownService({
  * Turndown convierte por defecto una imagen en `![alt](src)`, que para estos
  * bloques seria una imagen rota. La regla se registra antes de las suyas.
  */
-conversor.addRule('videoIncrustado', {
-  filter: (nodo) => nodo.nodeName === 'IMG' && nodo.hasAttribute(ATRIBUTO_VIDEO),
+conversor.addRule("videoIncrustado", {
+  filter: (nodo) =>
+    nodo.nodeName === "IMG" && nodo.hasAttribute(ATRIBUTO_VIDEO),
   replacement: (_contenido, nodo) => {
-    const linea = (nodo as HTMLElement).getAttribute(ATRIBUTO_VIDEO) ?? '';
-    return linea ? `\n\n${linea}\n\n` : '';
+    const linea = (nodo as HTMLElement).getAttribute(ATRIBUTO_VIDEO) ?? "";
+    return linea ? `\n\n${linea}\n\n` : "";
   },
 });
 
@@ -52,32 +53,53 @@ conversor.addRule('videoIncrustado', {
  * clasica del markdown. Aqui basta el salto: la web y el panel leen el
  * markdown con la opcion de cortar linea en cada salto.
  */
-conversor.addRule('saltoSimple', {
-  filter: 'br',
-  replacement: () => '\n',
+conversor.addRule("saltoSimple", {
+  filter: "br",
+  replacement: () => "\n",
 });
 
 /** Lo que se guarda en el post, a partir de lo que hay en el editor. */
 export const htmlAMarkdown = (html: string): string => {
-  if (!html || html === '<p></p>') return '';
-  return (
-    conversor
-      .turndown(html)
-      // Turndown escribe los puntos de una lista como "-   texto" y deja una
-      // linea de espacios detras de cada uno, porque el editor envuelve el
-      // contenido de cada punto en un parrafo. Eso vuelve la lista «suelta» y
-      // la web le pone un hueco entre puntos que nadie pidio. Se aprieta aqui.
-      .replace(/^(\s*)[-*][ 	]{2,}/gm, '$1- ')
-      // Lineas que solo tienen espacios: fuera.
-      .replace(/^[ 	]+$/gm, '')
-      // Con la opcion de cortar linea en cada salto, un espacio al final de
-      // linea sobra y puede colarse como un salto de mas.
-      .replace(/[ 	]+$/gm, '')
-      // Turndown deja hasta tres saltos entre bloques; con dos basta y el
-      // markdown queda legible si alguien lo mira por debajo.
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-  );
+  if (!html || html === "<p></p>") return "";
+  const crudo = conversor
+    .turndown(html)
+    // Turndown escribe los puntos de una lista como "-   texto" y deja una
+    // linea de espacios detras de cada uno, porque el editor envuelve el
+    // contenido de cada punto en un parrafo. Eso vuelve la lista «suelta» y
+    // la web le pone un hueco entre puntos que nadie pidio. Se aprieta aqui.
+    .replace(/^(\s*)[-*][ 	]{2,}/gm, "$1- ")
+    // Lineas que solo tienen espacios: fuera.
+    .replace(/^[ 	]+$/gm, "")
+    // Con la opcion de cortar linea en cada salto, un espacio al final de
+    // linea sobra y puede colarse como un salto de mas.
+    .replace(/[ 	]+$/gm, "")
+    // Turndown deja hasta tres saltos entre bloques; con dos basta y el
+    // markdown queda legible si alguien lo mira por debajo.
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return apretarListas(crudo);
+};
+
+/**
+ * Quita la linea en blanco entre puntos seguidos de una lista.
+ *
+ * En markdown, un hueco entre dos puntos convierte la lista en «suelta»: el
+ * procesador envuelve el contenido de cada punto en un parrafo y la web le
+ * pone un espacio entre puntos que nadie pidio. Comprobado con el procesador
+ * de la web: con el hueco sale <li><p>, sin el hueco sale <li> a secas.
+ *
+ * Se repite hasta que no quede ninguno, porque cada pasada solo junta un par.
+ */
+const apretarListas = (markdown: string): string => {
+  const separador = /^([ \t]*(?:[-*]|\d+\.) .*)\n\n(?=[ \t]*(?:[-*]|\d+\.) )/m;
+  let salida = markdown;
+  let vueltas = 0;
+  while (separador.test(salida) && vueltas < 200) {
+    salida = salida.replace(separador, "$1\n");
+    vueltas += 1;
+  }
+  return salida;
 };
 
 /**
@@ -90,7 +112,7 @@ export const htmlAMarkdown = (html: string): string => {
  */
 export const markdownAHtml = (markdown: string): string => {
   const html = renderizarMarkdownPost(markdown);
-  if (!html) return '';
+  if (!html) return "";
   return plegarVideosAImagen(html, markdown);
 };
 
@@ -102,34 +124,37 @@ export const markdownAHtml = (markdown: string): string => {
  */
 const plegarVideosAImagen = (html: string, markdown: string): string => {
   const lineasDeVideo = markdown
-    .split('\n')
+    .split("\n")
     .map((l) => l.trim())
     .filter((l) => /^@(youtube|vimeo|video):/.test(l));
   if (lineasDeVideo.length === 0) return html;
 
   let indice = 0;
-  return html.replace(/<figure class="video-incrustado">[\s\S]*?<\/figure>/g, () => {
-    const linea = lineasDeVideo[indice++] ?? '';
-    const etiqueta = linea.startsWith('@youtube:')
-      ? 'Vídeo de YouTube'
-      : linea.startsWith('@vimeo:')
-        ? 'Vídeo de Vimeo'
-        : 'Vídeo';
-    // Una imagen 16:9 transparente hace de hueco: el editor la trata como un
-    // bloque normal, se puede seleccionar y borrar, y el CSS le pinta encima
-    // el rotulo y el fondo.
-    return (
-      `<img ${ATRIBUTO_VIDEO}="${escaparAtributo(linea)}" ` +
-      `alt="${escaparAtributo(etiqueta)}" ` +
-      `src="data:image/svg+xml;utf8,${encodeURIComponent(
-        '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"></svg>',
-      )}">`
-    );
-  });
+  return html.replace(
+    /<figure class="video-incrustado">[\s\S]*?<\/figure>/g,
+    () => {
+      const linea = lineasDeVideo[indice++] ?? "";
+      const etiqueta = linea.startsWith("@youtube:")
+        ? "Vídeo de YouTube"
+        : linea.startsWith("@vimeo:")
+          ? "Vídeo de Vimeo"
+          : "Vídeo";
+      // Una imagen 16:9 transparente hace de hueco: el editor la trata como un
+      // bloque normal, se puede seleccionar y borrar, y el CSS le pinta encima
+      // el rotulo y el fondo.
+      return (
+        `<img ${ATRIBUTO_VIDEO}="${escaparAtributo(linea)}" ` +
+        `alt="${escaparAtributo(etiqueta)}" ` +
+        `src="data:image/svg+xml;utf8,${encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"></svg>',
+        )}">`
+      );
+    },
+  );
 };
 
 const escaparAtributo = (texto: string): string =>
-  texto.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  texto.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 
 /** Marca que el editor usa para reconocer sus bloques de video. */
 export const atributoVideo = ATRIBUTO_VIDEO;
