@@ -42,6 +42,13 @@ interface Propiedades {
 
 // Los nombres de campo salen del diccionario, que es donde vive la unica
 // copia de "como se dice esto en cristiano".
+import {
+  CampoListaDeTextos,
+  CampoTitularEnRenglones,
+  esListaDeTextos,
+  esTitularEnRenglones,
+} from './CamposEspeciales';
+
 const humanizar = nombreDeCampo;
 
 /** Un texto largo o con saltos de línea merece un área, no una línea. */
@@ -188,6 +195,26 @@ export const CampoDocumento = ({
   }
 
   if (Array.isArray(valor)) {
+    // Dos formas se enseñan como lo que significan, no como su estructura.
+    // Ver CamposEspeciales.tsx para el por qué.
+    if (esListaDeTextos(valor)) {
+      return (
+        <CampoListaDeTextos
+          nombre={nombre}
+          valor={valor}
+          alCambiar={(nuevo) => alCambiar(nuevo as unknown as Valor)}
+        />
+      );
+    }
+    if (esTitularEnRenglones(valor)) {
+      return (
+        <CampoTitularEnRenglones
+          nombre={nombre}
+          valor={valor}
+          alCambiar={(nuevo) => alCambiar(nuevo as unknown as Valor)}
+        />
+      );
+    }
     return (
       <ListaDocumento
         nombre={nombre}
