@@ -228,6 +228,10 @@ export const EditorRico = ({
       title={titulo}
       aria-pressed={activo}
       disabled={deshabilitado}
+      // Sin esto el boton se queda el foco al pulsarlo, la seleccion del
+      // editor se pierde y lo siguiente que se teclee no llega a ningun sitio.
+      // Es el fallo clasico de las barras de formato.
+      onMouseDown={(evento) => evento.preventDefault()}
       onClick={alPulsar}
       className={unirClases(
         'h-8 rounded-suave border px-2.5 text-xs transicion-natural disabled:opacity-40',
@@ -261,6 +265,7 @@ export const EditorRico = ({
       <div className="filete-bajo flex flex-wrap items-center gap-1.5 px-3 py-2">
         <button
           type="button"
+          onMouseDown={(evento) => evento.preventDefault()}
           onClick={() => archivoRef.current?.click()}
           className="inline-flex h-8 items-center gap-1.5 rounded-suave bg-tinta px-3 text-xs font-medium text-lienzo transicion-natural hover:bg-grafito"
           title="Subir una foto o un vídeo de tu ordenador (Ctrl+U)"
