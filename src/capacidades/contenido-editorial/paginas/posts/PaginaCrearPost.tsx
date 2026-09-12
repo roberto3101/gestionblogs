@@ -296,8 +296,8 @@ export const PaginaCrearPost = () => {
       />
 
       {/* ----------------------------------------------- lo imprescindible */}
-      <Lamina className="mt-4 p-5">
-        <div className="space-y-4">
+      <Lamina className="mt-4 p-4">
+        <div className="space-y-3">
           <CampoTexto
             etiqueta="Título"
             value={borrador.titulo}
@@ -305,7 +305,7 @@ export const PaginaCrearPost = () => {
             placeholder="De qué trata el post"
           />
 
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <CampoPortada
               valorId={borrador.imagenPortadaId}
               valorUrl={borrador.imagenPortadaUrl}

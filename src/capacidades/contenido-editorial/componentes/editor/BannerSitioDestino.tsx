@@ -20,6 +20,48 @@ export const BannerSitioDestino = ({
   const consulta = useListarSitios();
   const sitios = consulta.data?.elementos ?? [];
 
+  const unicaWeb = sitios.length === 1 ? sitios[0] : null;
+
+  /*
+   * Con una sola web, las tarjetas de eleccion son ruido: ocupaban media
+   * pantalla para ofrecer una unica opcion ya elegida, y empujaban el area de
+   * escritura por debajo del pliegue. Se resume en una linea.
+   */
+  if (unicaWeb) {
+    const urlPublica = construirUrlPublicaBlog(unicaWeb.codigo, idiomaSeleccionado);
+    return (
+      <div className="lamina mb-4 flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+        <p className="text-sm text-grafito">
+          Se publica en <strong className="text-tinta">{unicaWeb.nombre}</strong>
+          {urlPublica && <span className="ml-2 text-xs text-humo">{urlPublica}</span>}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="meta-tipografia text-humo">Idioma</span>
+          <div className="flex gap-1 rounded-suave border border-ceniza bg-lienzo p-1">
+            {[
+              { codigo: 'es', etiqueta: 'Español' },
+              { codigo: 'en', etiqueta: 'English' },
+            ].map((opcion) => (
+              <button
+                key={opcion.codigo}
+                type="button"
+                onClick={() => alCambiarIdioma(opcion.codigo)}
+                className={unirClases(
+                  'h-8 rounded-suave px-3 text-sm transicion-natural',
+                  idiomaSeleccionado === opcion.codigo
+                    ? 'bg-tinta font-medium text-lienzo'
+                    : 'text-grafito hover:bg-ceniza/40',
+                )}
+              >
+                {opcion.etiqueta}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="lamina p-5 mb-6">
       <div className="flex items-start justify-between gap-6 flex-wrap">

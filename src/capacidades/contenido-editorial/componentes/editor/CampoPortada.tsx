@@ -81,7 +81,7 @@ export const CampoPortada = ({ valorId, valorUrl, alCambiar, sitioId }: Propieda
 
       {valorUrl ? (
         <div className="overflow-hidden rounded-suave border border-ceniza">
-          <img src={valorUrl} alt="" className="block h-32 w-full object-cover" />
+          <img src={valorUrl} alt="" className="block h-24 w-full object-cover" />
           <div className="flex items-center justify-between gap-2 bg-papel px-2.5 py-2">
             <span className="meta-tipografia text-xs text-humo">Se verá arriba del post</span>
             <div className="flex gap-1.5">
@@ -114,7 +114,7 @@ export const CampoPortada = ({ valorId, valorUrl, alCambiar, sitioId }: Propieda
           }}
           onDrop={alSoltar}
           className={unirClases(
-            'rounded-suave border border-dashed border-ceniza bg-papel px-3 py-5 text-center transicion-natural',
+            'rounded-suave border border-dashed border-ceniza bg-papel px-3 py-3 text-center transicion-natural',
             arrastrando && 'border-oliva bg-oliva-suave/40',
           )}
         >
