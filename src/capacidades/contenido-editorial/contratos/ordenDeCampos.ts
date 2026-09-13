@@ -8,13 +8,14 @@
  * el orden en que las cosas aparecen en la pagina.
  *
  * La foto y el video van los primeros aunque en la pagina esten al fondo: es
- * lo que mas cuesta encontrar cuando se quiere cambiar.
+ * lo que mas cuesta encontrar cuando se quiere cambiar. Su descripcion va
+ * justo detras, porque describe a la foto que se acaba de ver.
  *
  * Un campo que no este en esta lista se pinta detras, en el orden que venga.
  */
 export const ordenDeCampos: Record<string, string[]> = {
   'casos-de-uso/catalogo': ['titulo', 'subtitulo', 'marcadorBusqueda', 'rotuloFiltro', 'opcionesFiltro', 'elementos', 'sinResultados', 'conteo'],
-  'casos-de-uso/destacado': ['imagenVideo', 'video', 'insignia', 'titulo', 'textoInicio', 'textoEnlace', 'textoFin', 'accionPrincipal', 'accionSecundaria', 'insigniaVideo', 'detalleVideo', 'textoAlternativoVideo', 'tituloResultados', 'resultados', 'archivoPdf'],
+  'casos-de-uso/destacado': ['imagenVideo', 'video', 'textoAlternativoVideo', 'insignia', 'titulo', 'textoInicio', 'textoEnlace', 'textoFin', 'accionPrincipal', 'accionSecundaria', 'insigniaVideo', 'detalleVideo', 'tituloResultados', 'resultados', 'archivoPdf'],
   'casos-de-uso/llamada': ['textoAlternativo', 'titulo', 'texto', 'accionPrincipal'],
   'casos-de-uso/metadatos': ['titulo', 'descripcion', 'palabrasClave'],
   'casos-de-uso/pestanas': ['rotulo', 'elementos'],
@@ -28,20 +29,20 @@ export const ordenDeCampos: Record<string, string[]> = {
   'comunes/organizacion': ['nombreSitio', 'configuracionRegional', 'razonSocial', 'descripcion', 'ambitoAtendido', 'ciudadFundacion', 'correo', 'telefono', 'redSocial'],
   'comunes/pie': ['lema', 'columnas', 'contacto', 'redes', 'aviso', 'nombrePlataforma', 'lemaPlataforma', 'rotuloRedes', 'accionContacto', 'marcaGrande'],
   'comunes/visor': ['cerrar', 'nota'],
-  'inicio/cambio': ['textoAlternativo', 'imagen', 'titulo', 'subtitulo', 'texto', 'insignia'],
+  'inicio/cambio': ['imagen', 'textoAlternativo', 'titulo', 'subtitulo', 'texto', 'insignia'],
   'inicio/casos': ['titulo', 'subtitulo', 'elementos'],
   'inicio/funcionamiento': ['titulo', 'subtitulo', 'pasos'],
   'inicio/llamada': ['textoAlternativo', 'titulo', 'texto', 'accionPrincipal', 'accionSecundaria', 'palabrasLaterales'],
   'inicio/metadatos': ['titulo', 'descripcion', 'palabrasClave', 'textoAlternativoPortada'],
-  'inicio/portada': ['textoAlternativo', 'imagen', 'antetitulo', 'lineasTitulo', 'entradilla', 'accionPrincipal', 'accionSecundaria', 'atributos', 'palabrasLaterales', 'notaLateral'],
-  'inicio/resultados': ['textoAlternativo', 'imagen', 'titulo', 'subtitulo', 'cita', 'cifras'],
+  'inicio/portada': ['imagen', 'textoAlternativo', 'antetitulo', 'lineasTitulo', 'entradilla', 'accionPrincipal', 'accionSecundaria', 'atributos', 'palabrasLaterales', 'notaLateral'],
+  'inicio/resultados': ['imagen', 'textoAlternativo', 'titulo', 'subtitulo', 'cita', 'cifras'],
   'inicio/sectores': ['titulo', 'subtitulo', 'elementos'],
   'inicio/soluciones': ['titulo', 'subtitulo', 'elementos'],
   'nosotros/alianzas': ['titulo', 'texto', 'accion', 'emblemas', 'certificaciones'],
-  'nosotros/cifras': ['textoAlternativo', 'imagen', 'titulo', 'elementos', 'palabrasLaterales'],
+  'nosotros/cifras': ['imagen', 'textoAlternativo', 'titulo', 'elementos', 'palabrasLaterales'],
   'nosotros/contacto': ['antetitulo', 'titulo', 'texto', 'campos', 'opcionesConsulta', 'consentimiento', 'errorConsentimiento', 'enviar', 'enviando', 'exito', 'exitoRemoto', 'fallo', 'asunto', 'canales'],
-  'nosotros/equipo': ['textoAlternativo', 'imagen', 'titulo', 'subtitulo', 'texto', 'accion', 'complemento'],
-  'nosotros/historia': ['textoAlternativo', 'imagen', 'titulo', 'subtitulo', 'texto', 'accion', 'palabrasSede', 'mision', 'vision'],
+  'nosotros/equipo': ['imagen', 'textoAlternativo', 'titulo', 'subtitulo', 'texto', 'accion', 'complemento'],
+  'nosotros/historia': ['imagen', 'textoAlternativo', 'titulo', 'subtitulo', 'texto', 'accion', 'palabrasSede', 'mision', 'vision'],
   'nosotros/llamada': ['textoAlternativo', 'titulo', 'texto', 'accionPrincipal', 'accionSecundaria', 'palabrasLaterales'],
   'nosotros/metadatos': ['titulo', 'descripcion', 'palabrasClave'],
   'nosotros/portada': ['textoAlternativo', 'antetitulo', 'lineasTitulo', 'entradilla', 'cita', 'palabrasLaterales', 'palabrasLateralesEco'],
@@ -55,7 +56,7 @@ export const ordenDeCampos: Record<string, string[]> = {
   'recursos/portada': ['textoAlternativo', 'antetitulo', 'lineasTitulo', 'entradilla', 'atributos', 'palabrasLaterales'],
   'recursos/videos': ['titulo', 'subtitulo', 'verTodos', 'elementos', 'ambitos'],
   'sectores/beneficios': ['elementos'],
-  'sectores/caso-exito': ['textoAlternativo', 'imagen', 'insignia', 'titulo', 'texto', 'accion', 'cifras', 'cita', 'autor', 'cargo'],
+  'sectores/caso-exito': ['imagen', 'textoAlternativo', 'insignia', 'titulo', 'texto', 'accion', 'cifras', 'cita', 'autor', 'cargo'],
   'sectores/catalogo': ['titulo', 'subtitulo', 'nota', 'elementos'],
   'sectores/llamada': ['textoAlternativo', 'titulo', 'texto', 'accionPrincipal', 'palabrasLaterales'],
   'sectores/metadatos': ['titulo', 'descripcion', 'palabrasClave'],
