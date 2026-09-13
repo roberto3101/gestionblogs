@@ -323,6 +323,14 @@ export const PaginaContenidoSitio = () => {
                                 asignarTextoEnfocado(enfocado.texto);
                                 asignarRespaldoEnfocado(enfocado.respaldo);
                               }}
+                              /* Y por el click, porque hay trozos que no
+                                 reciben el cursor: una foto, por ejemplo. */
+                              onClick={(evento) => {
+                                const tocado = leerCampoEnfocado(evento.target);
+                                if (!tocado) return;
+                                asignarTextoEnfocado(tocado.texto);
+                                asignarRespaldoEnfocado(tocado.respaldo);
+                              }}
                             >
                               {/* En el orden en que las cosas salen en la pagina, no en
                                   el alfabetico en que la base devuelve el JSON. */}

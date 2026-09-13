@@ -28,6 +28,15 @@ export interface CampoEnfocado {
 /** Marca que llevan las fichas para saber de qué hablan sin leerles dentro. */
 export const ATRIBUTO_RESUMEN = 'data-resumen';
 
+/**
+ * Marca de lo que vale un trozo que no es un campo de texto.
+ *
+ * La foto de una tarjeta, por ejemplo: no hay nada donde escribir, así que el
+ * cursor nunca entra en ningún sitio y no había forma de saber que se estaba
+ * tocando esa foto y no otra cosa.
+ */
+export const ATRIBUTO_VALOR = 'data-valor';
+
 const LIMITE = 120;
 
 /**
@@ -62,11 +71,17 @@ export const leerCampoEnfocado = (objetivo: EventTarget | null): CampoEnfocado |
   const nodo = objetivo as HTMLElement | null;
   if (!nodo || typeof nodo.closest !== 'function') return null;
 
+  const ficha = nodo.closest(`[${ATRIBUTO_RESUMEN}]`);
+  const respaldo = (ficha?.getAttribute(ATRIBUTO_RESUMEN) ?? '').slice(0, LIMITE);
+
+  // Lo que no es un campo pero vale algo —una foto, un video— lo dice él mismo.
+  const suyo = nodo.closest(`[${ATRIBUTO_VALOR}]`);
+  if (suyo) {
+    return { texto: (suyo.getAttribute(ATRIBUTO_VALOR) ?? '').slice(0, LIMITE), respaldo };
+  }
+
   const texto = textoVisible(nodo);
   if (texto === null) return null;
 
-  const ficha = nodo.closest(`[${ATRIBUTO_RESUMEN}]`);
-  const respaldo = ficha?.getAttribute(ATRIBUTO_RESUMEN) ?? '';
-
-  return { texto: texto.slice(0, LIMITE), respaldo: respaldo.slice(0, LIMITE) };
+  return { texto: texto.slice(0, LIMITE), respaldo };
 };

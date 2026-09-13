@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ATRIBUTO_VALOR } from './campoEnfocado';
 import { Boton } from '@compartido/interfaz/primitivas/Boton';
 import { useSitioActivo } from '@plataforma/contexto/contextoSitioActivo';
 import { subirArchivo } from '../../servicios/servicioSubidaArchivos';
@@ -86,7 +87,10 @@ export const CampoArchivo = ({ etiqueta, clase, valor, alCambiar, baseDelSitio }
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    // Una foto no es un campo de texto: al pincharla no habia nada que mandar a
+    // la vista previa y el naranja se quedaba donde estuviera, senalando otra
+    // cosa. Con esto, tocar la foto enciende esa misma foto en la web.
+    <div className="flex flex-col gap-2" {...{ [ATRIBUTO_VALOR]: valor }}>
       <span className="meta-tipografia text-grafito">{etiqueta}</span>
 
       <div className="flex items-start gap-4">
