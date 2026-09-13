@@ -16,6 +16,7 @@ import {
   useResumenBloques,
 } from '../../ganchos/useBloques';
 import { CampoDocumento } from '../../componentes/bloques/CampoDocumento';
+import { leerCampoEnfocado } from '../../componentes/bloques/campoEnfocado';
 import { ordenarCampos } from '../../contratos/ordenDeCampos';
 import { VistaPrevia } from '../../componentes/bloques/VistaPrevia';
 import {
@@ -99,6 +100,10 @@ export const PaginaContenidoSitio = () => {
   const [verWeb, asignarVerWeb] = useState(true);
   // Texto del campo que tiene el cursor, para que la vista previa lo rodee.
   const [textoEnfocado, asignarTextoEnfocado] = useState('');
+  // Titulo de la ficha donde vive ese campo. Se usa cuando lo que hay en el
+  // campo no es texto de la pagina (un dibujo, una foto, la clave de un
+  // filtro) y por tanto no hay ninguna frase que rodear.
+  const [respaldoEnfocado, asignarRespaldoEnfocado] = useState('');
   // Que hay que deshacer: un trozo concreto o todo lo guardado sin publicar.
   const [porDeshacer, asignarPorDeshacer] = useState<
     { alcance: 'todos' } | { alcance: 'uno'; clave: string } | null
@@ -125,6 +130,7 @@ export const PaginaContenidoSitio = () => {
 
   const cerrar = () => {
     asignarTextoEnfocado('');
+    asignarRespaldoEnfocado('');
     asignarVaciosDetectados([]);
     asignarClaveAbierta(null);
     asignarBorrador(null);
@@ -310,10 +316,12 @@ export const PaginaContenidoSitio = () => {
                               /* focusin sube por el arbol, asi que un solo oyente aqui
                                  vale para todos los campos, por hondos que esten. */
                               onFocus={(evento) => {
-                                const campo = evento.target as HTMLInputElement | HTMLTextAreaElement;
-                                if (campo && typeof campo.value === 'string') {
-                                  asignarTextoEnfocado(campo.value.slice(0, 120));
-                                }
+                                const enfocado = leerCampoEnfocado(evento.target);
+                                // Un boton (subir, duplicar, quitar) no es un
+                                // campo: lo que estuviera encendido se queda.
+                                if (!enfocado) return;
+                                asignarTextoEnfocado(enfocado.texto);
+                                asignarRespaldoEnfocado(enfocado.respaldo);
                               }}
                             >
                               {/* En el orden en que las cosas salen en la pagina, no en
@@ -424,7 +432,8 @@ export const PaginaContenidoSitio = () => {
           {mostrarPrevia && (
             <div className="xl:sticky xl:top-6">
               <VistaPrevia
-                    textoEnfocado={textoEnfocado}
+                textoEnfocado={textoEnfocado}
+                respaldoEnfocado={respaldoEnfocado}
                 codigoSitio={sitioActivo.codigo}
                 baseDelSitio={baseDelSitio}
                 ruta={rutaPrevia}

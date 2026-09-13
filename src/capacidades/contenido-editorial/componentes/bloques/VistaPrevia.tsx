@@ -33,6 +33,8 @@ interface Propiedades {
    * rodea en naranja, para saber cuál de los textos de la pantalla es.
    */
   textoEnfocado?: string;
+  /** Titulo de la ficha del campo, por si su texto no sale en la pagina. */
+  respaldoEnfocado?: string;
   /**
    * Textos a sustituir en caliente: del valor publicado al que se está
    * escribiendo ahora. Solo cadenas, que es lo que se puede reemplazar sin
@@ -55,6 +57,7 @@ export const VistaPrevia = ({
   sustituciones,
   alCerrar,
   textoEnfocado,
+  respaldoEnfocado,
 }: Propiedades) => {
   const marco = useRef<HTMLIFrameElement>(null);
   const [tamano, asignarTamano] = useState<Tamano>('escritorio');
@@ -63,6 +66,10 @@ export const VistaPrevia = ({
   // Si se puede señalar en la página lo que se está cambiando.
   const [puedeMarcar, asignarPuedeMarcar] = useState(true);
   const [pantallaCompleta, asignarPantallaCompleta] = useState(false);
+  // Que consiguio encender la pagina con el campo que tiene el cursor.
+  const [estadoResaltado, asignarEstadoResaltado] = useState<'exacto' | 'zona' | 'nada' | null>(
+    null,
+  );
 
   // Se pide al CMS, que la descarga de la web y la sirve desde aqui. Sin
   // esto el navegador la bloquearia: la web prohibe que la incrusten.
@@ -130,8 +137,40 @@ export const VistaPrevia = ({
     } catch {
       return;
     }
-    ventana.postMessage({ tipo: 'cms-resaltar', texto: textoEnfocado ?? '' }, destino);
-  }, [textoEnfocado, direccion]);
+    ventana.postMessage(
+      { tipo: 'cms-resaltar', texto: textoEnfocado ?? '', respaldo: respaldoEnfocado ?? '' },
+      destino,
+    );
+  }, [textoEnfocado, respaldoEnfocado, direccion]);
+
+  /*
+   * La pagina contesta si encontro el trozo, la ficha, o nada.
+   *
+   * Hay datos que no se ven en la pagina por mucho que se busquen: lo que sale
+   * en Google, los datos de la empresa para los buscadores, el aviso de un
+   * formulario que solo aparece al equivocarse. Decirlo es mejor que dejar a
+   * quien edita mirando una web donde no pasa nada.
+   */
+  useEffect(() => {
+    let origen: string;
+    try {
+      origen = new URL(direccion, window.location.href).origin;
+    } catch {
+      return;
+    }
+    const alRecibir = (evento: MessageEvent) => {
+      if (evento.origin !== origen) return;
+      const dato = evento.data as { tipo?: string; estado?: string } | null;
+      if (!dato || dato.tipo !== 'cms-resaltado') return;
+      asignarEstadoResaltado(
+        dato.estado === 'exacto' || dato.estado === 'zona' || dato.estado === 'nada'
+          ? dato.estado
+          : null,
+      );
+    };
+    window.addEventListener('message', alRecibir);
+    return () => window.removeEventListener('message', alRecibir);
+  }, [direccion]);
 
   // Si la web no responde, avisar en vez de dejar un marco en blanco. Se mira
   // si llego a cargar, no lo que hay dentro: en dominios distintos el
@@ -259,9 +298,13 @@ export const VistaPrevia = ({
       </div>
 
       <footer className="px-4 py-2 border-t border-ceniza text-xs text-humo">
-        {puedeMarcar
-          ? 'Lo naranja es lo que estás cambiando. La web de verdad no cambia hasta que publiques.'
-          : 'Esto es la web tal y como está publicada. La web no cambia hasta que publiques.'}
+        {estadoResaltado === 'nada'
+          ? 'Esto no se ve en la página: es lo que leen Google y los buscadores.'
+          : estadoResaltado === 'zona'
+            ? 'Lo de rayas naranjas es la parte que estás cambiando. Este dato en concreto no se lee en la página.'
+            : puedeMarcar
+              ? 'Lo naranja es lo que estás cambiando. La web de verdad no cambia hasta que publiques.'
+              : 'Esto es la web tal y como está publicada. La web no cambia hasta que publiques.'}
       </footer>
     </aside>
   );

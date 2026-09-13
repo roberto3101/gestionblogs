@@ -13,6 +13,7 @@ import {
   nombreDeCampo,
 } from '../../contratos/diccionario';
 import { CampoArchivo } from './CampoArchivo';
+import { ATRIBUTO_RESUMEN } from './campoEnfocado';
 
 /**
  * Editor recursivo de un documento JSON.
@@ -113,9 +114,12 @@ export const CampoDocumento = ({
         />
       );
     }
-    // Campos que guardan el nombre de un icono o de un boton de la web: se
-    // eligen de una lista, para no poder escribir algo que la web no conozca.
-    const opciones = opcionesDeCampo(nombre);
+    // Campos que guardan una clave y no un texto —el nombre de un dibujo, el
+    // de un boton, el filtro al que pertenece algo, la flecha de un
+    // resultado—: se eligen de una lista, para no poder escribir algo que la
+    // web no conozca y que desapareceria sin avisar.
+    const deLaLista = opcionesDeLista(nombre, documentoRaiz);
+    const opciones = deLaLista?.opciones ?? opcionesDeCampo(nombre);
     if (opciones) {
       const conocido = opciones.some((o) => o.valor === valor);
       return (
@@ -138,8 +142,12 @@ export const CampoDocumento = ({
               </option>
             ))}
           </select>
-          {nombre === 'icono' && (
-            <span className="text-xs text-humo">El dibujo que acompaña a este texto.</span>
+          {deLaLista ? (
+            <span className="text-xs text-humo">{deLaLista.ayuda}</span>
+          ) : (
+            nombre === 'icono' && (
+              <span className="text-xs text-humo">El dibujo que acompaña a este texto.</span>
+            )
           )}
         </label>
       );
@@ -394,6 +402,10 @@ const ListaDocumento = ({
         return (
           <article
             key={indice}
+            /* De qué habla esta ficha. La vista previa lo usa para encender la
+               tarjeta cuando el campo que se toca no es texto de la página
+               —un dibujo, una foto, la clave de un filtro—. */
+            {...{ [ATRIBUTO_RESUMEN]: titulo }}
             className={unirClases(
               'border rounded-suave bg-papel',
               vacio ? 'border-ambar/60' : 'border-ceniza',

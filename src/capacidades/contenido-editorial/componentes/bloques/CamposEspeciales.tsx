@@ -280,6 +280,21 @@ export const CampoListaDeOpciones = ({
  * filtros que el propio bloque define en `opcionesFiltro`: se leen de ahí, así
  * que si alguien añade un filtro nuevo aparece solo.
  */
+/** Campos que guardan la clave de uno de los filtros del propio trozo. */
+const DE_LOS_FILTROS = new Set(['categorias', 'sector']);
+
+/**
+ * La flecha que acompana a un resultado.
+ *
+ * La web mira si pone `baja`; con cualquier otra cosa dibuja la flecha hacia
+ * arriba. Escribir mal la palabra no rompia nada de forma visible: ensenaba lo
+ * contrario de lo que se queria decir, que es peor.
+ */
+const TENDENCIAS = [
+  { valor: 'alza', etiqueta: 'Sube ↑' },
+  { valor: 'baja', etiqueta: 'Baja ↓' },
+];
+
 export const opcionesDeLista = (
   nombre: string,
   documento?: Record<string, unknown>,
@@ -288,7 +303,10 @@ export const opcionesDeLista = (
     const iconos = opcionesDeCampo('icono');
     return iconos ? { opciones: iconos, ayuda: 'Dibujos del juego de la web.' } : null;
   }
-  if (nombre === 'categorias' && documento) {
+  if (nombre === 'tendencia') {
+    return { opciones: TENDENCIAS, ayuda: 'La flecha que sale junto a la cifra.' };
+  }
+  if (DE_LOS_FILTROS.has(nombre) && documento) {
     const filtros = documento.opcionesFiltro;
     if (Array.isArray(filtros)) {
       const opciones = filtros
