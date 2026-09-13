@@ -16,6 +16,7 @@ import {
   useResumenBloques,
 } from '../../ganchos/useBloques';
 import { CampoDocumento } from '../../componentes/bloques/CampoDocumento';
+import { ordenarCampos } from '../../contratos/ordenDeCampos';
 import { VistaPrevia } from '../../componentes/bloques/VistaPrevia';
 import {
   documentoVigente,
@@ -96,6 +97,8 @@ export const PaginaContenidoSitio = () => {
   const [claveAbierta, asignarClaveAbierta] = useState<string | null>(null);
   const [borrador, asignarBorrador] = useState<DocumentoBloque | null>(null);
   const [verWeb, asignarVerWeb] = useState(true);
+  // Texto del campo que tiene el cursor, para que la vista previa lo rodee.
+  const [textoEnfocado, asignarTextoEnfocado] = useState('');
   // Que hay que deshacer: un trozo concreto o todo lo guardado sin publicar.
   const [porDeshacer, asignarPorDeshacer] = useState<
     { alcance: 'todos' } | { alcance: 'uno'; clave: string } | null
@@ -121,6 +124,7 @@ export const PaginaContenidoSitio = () => {
   };
 
   const cerrar = () => {
+    asignarTextoEnfocado('');
     asignarVaciosDetectados([]);
     asignarClaveAbierta(null);
     asignarBorrador(null);
@@ -301,12 +305,24 @@ export const PaginaContenidoSitio = () => {
 
                         {abierto && borrador && (
                           <div className="border-t border-ceniza/60 p-5 bg-lienzo">
-                            <div className="flex flex-col gap-5">
-                              {Object.entries(borrador).map(([clave, valor]) => (
+                            <div
+                              className="flex flex-col gap-5"
+                              /* focusin sube por el arbol, asi que un solo oyente aqui
+                                 vale para todos los campos, por hondos que esten. */
+                              onFocus={(evento) => {
+                                const campo = evento.target as HTMLInputElement | HTMLTextAreaElement;
+                                if (campo && typeof campo.value === 'string') {
+                                  asignarTextoEnfocado(campo.value.slice(0, 120));
+                                }
+                              }}
+                            >
+                              {/* En el orden en que las cosas salen en la pagina, no en
+                                  el alfabetico en que la base devuelve el JSON. */}
+                              {ordenarCampos(bloque.clave, Object.keys(borrador)).map((clave) => (
                                 <CampoDocumento
                                   key={clave}
                                   nombre={clave}
-                                  valor={valor}
+                                  valor={borrador[clave]}
                                   baseDelSitio={baseDelSitio}
                                   alCambiar={(nuevo) =>
                                     asignarBorrador((previo) =>
@@ -407,6 +423,7 @@ export const PaginaContenidoSitio = () => {
           {mostrarPrevia && (
             <div className="xl:sticky xl:top-6">
               <VistaPrevia
+                    textoEnfocado={textoEnfocado}
                 codigoSitio={sitioActivo.codigo}
                 baseDelSitio={baseDelSitio}
                 ruta={rutaPrevia}

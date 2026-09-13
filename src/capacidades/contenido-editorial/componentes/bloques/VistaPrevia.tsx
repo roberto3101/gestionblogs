@@ -29,6 +29,11 @@ interface Propiedades {
    */
   bloque: string;
   /**
+   * Texto del campo que se está editando ahora mismo. La página lo busca y lo
+   * rodea en naranja, para saber cuál de los textos de la pantalla es.
+   */
+  textoEnfocado?: string;
+  /**
    * Textos a sustituir en caliente: del valor publicado al que se está
    * escribiendo ahora. Solo cadenas, que es lo que se puede reemplazar sin
    * volver a montar la página.
@@ -49,6 +54,7 @@ export const VistaPrevia = ({
   bloque,
   sustituciones,
   alCerrar,
+  textoEnfocado,
 }: Propiedades) => {
   const marco = useRef<HTMLIFrameElement>(null);
   const [tamano, asignarTamano] = useState<Tamano>('escritorio');
@@ -107,6 +113,25 @@ export const VistaPrevia = ({
     }, 250);
     return () => clearTimeout(temporizador);
   }, [sustituciones, cargando]);
+
+  /*
+   * Se le dice a la pagina que rodee el trozo que se esta editando.
+   *
+   * El panel ensena una lista de campos y la web ensena una pagina: sin esto,
+   * quien edita no sabe cual de los dos titulares de la pantalla es el campo
+   * que tiene delante. Se manda solo el texto; la pagina lo busca y lo rodea.
+   */
+  useEffect(() => {
+    const ventana = marco.current?.contentWindow;
+    if (!ventana) return;
+    let destino: string;
+    try {
+      destino = new URL(direccion, window.location.href).origin;
+    } catch {
+      return;
+    }
+    ventana.postMessage({ tipo: 'cms-resaltar', texto: textoEnfocado ?? '' }, destino);
+  }, [textoEnfocado, direccion]);
 
   // Si la web no responde, avisar en vez de dejar un marco en blanco. Se mira
   // si llego a cargar, no lo que hay dentro: en dominios distintos el
