@@ -36,6 +36,12 @@ interface Propiedades {
   valor: Valor;
   alCambiar: (nuevo: Valor) => void;
   profundidad?: number;
+  /**
+   * El trozo entero. Hace falta para las listas cuyas opciones salen del
+   * propio bloque, como las categorias de un caso, que tienen que coincidir
+   * con los filtros que define esa misma seccion.
+   */
+  documentoRaiz?: Record<string, Valor>;
   /** Direccion de la web, para ver las fotos que aun viven en el sitio. */
   baseDelSitio?: string;
 }
@@ -43,10 +49,12 @@ interface Propiedades {
 // Los nombres de campo salen del diccionario, que es donde vive la unica
 // copia de "como se dice esto en cristiano".
 import {
+  CampoListaDeOpciones,
   CampoListaDeTextos,
   CampoTitularEnRenglones,
   esListaDeTextos,
   esTitularEnRenglones,
+  opcionesDeLista,
 } from './CamposEspeciales';
 
 const humanizar = nombreDeCampo;
@@ -83,6 +91,7 @@ export const CampoDocumento = ({
   alCambiar,
   profundidad = 0,
   baseDelSitio = '',
+  documentoRaiz,
 }: Propiedades) => {
   if (typeof valor === 'string') {
     // Fotos, videos y documentos se eligen del ordenador, no se escriben.
@@ -197,6 +206,20 @@ export const CampoDocumento = ({
   if (Array.isArray(valor)) {
     // Dos formas se enseñan como lo que significan, no como su estructura.
     // Ver CamposEspeciales.tsx para el por qué.
+    const conOpciones = esListaDeTextos(valor) || valor.length === 0
+      ? opcionesDeLista(nombre, documentoRaiz)
+      : null;
+    if (conOpciones) {
+      return (
+        <CampoListaDeOpciones
+          nombre={nombre}
+          valor={(valor as string[]).filter((x) => typeof x === 'string')}
+          opciones={conOpciones.opciones}
+          ayuda={conOpciones.ayuda}
+          alCambiar={(nuevo) => alCambiar(nuevo as unknown as Valor)}
+        />
+      );
+    }
     if (esListaDeTextos(valor)) {
       return (
         <CampoListaDeTextos
@@ -222,6 +245,7 @@ export const CampoDocumento = ({
         alCambiar={alCambiar}
         profundidad={profundidad}
         baseDelSitio={baseDelSitio}
+        documentoRaiz={documentoRaiz}
       />
     );
   }
@@ -243,6 +267,7 @@ export const CampoDocumento = ({
             valor={hijo}
             profundidad={profundidad + 1}
             baseDelSitio={baseDelSitio}
+            documentoRaiz={documentoRaiz}
             alCambiar={(nuevo) => alCambiar({ ...objeto, [clave]: nuevo })}
           />
         ))}
@@ -260,6 +285,7 @@ const ListaDocumento = ({
   alCambiar,
   profundidad = 0,
   baseDelSitio = '',
+  documentoRaiz,
 }: Propiedades) => {
   const lista = valor as Valor[];
   const [plegados, asignarPlegados] = useState<Record<number, boolean>>({});
@@ -424,6 +450,7 @@ const ListaDocumento = ({
                   valor={elemento}
                   profundidad={profundidad + 1}
                   baseDelSitio={baseDelSitio}
+                  documentoRaiz={documentoRaiz}
                   alCambiar={(nuevo) => reemplazarEn(indice, nuevo)}
                 />
               </div>

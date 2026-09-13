@@ -25,7 +25,7 @@
 import { unirClases } from '@compartido/utilidades/unirClases';
 import { AreaTexto } from '@compartido/interfaz/primitivas/AreaTexto';
 import { CampoTexto } from '@compartido/interfaz/primitivas/CampoTexto';
-import { nombreDeCampo } from '../../contratos/diccionario';
+import { nombreDeCampo, opcionesDeCampo } from '../../contratos/diccionario';
 
 type Valor = unknown;
 
@@ -185,4 +185,122 @@ export const CampoTitularEnRenglones = ({
       </button>
     </div>
   );
+};
+
+
+/* ------------------------------------------- listas de cosas que hay que elegir */
+
+/**
+ * Hay listas de textos que NO son texto libre: guardan el nombre de un dibujo
+ * del juego de iconos, o la clave de uno de los filtros del propio bloque.
+ *
+ * Enseñarlas como un cuadro donde escribir era peor que antes: si alguien
+ * escribe «tapioca» donde iba «camara», el dibujo desaparece de la web y nadie
+ * avisa; y una categoría inventada deja ese caso fuera de todos los filtros.
+ *
+ * Aquí se eligen de una lista y no hay forma de escribir algo que la web no
+ * conozca.
+ */
+export const CampoListaDeOpciones = ({
+  nombre,
+  valor,
+  opciones,
+  ayuda,
+  alCambiar,
+}: {
+  nombre: string;
+  valor: string[];
+  opciones: { valor: string; etiqueta: string }[];
+  ayuda?: string;
+  alCambiar: (nuevo: string[]) => void;
+}) => {
+  const cambiar = (i: number, v: string) =>
+    alCambiar(valor.map((x, j) => (j === i ? v : x)));
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="meta-tipografia">{nombreDeCampo(nombre)}</span>
+        {ayuda && <span className="text-xs text-humo">{ayuda}</span>}
+      </div>
+
+      {valor.length === 0 && (
+        <p className="text-xs text-humo">No hay ninguno todavía.</p>
+      )}
+
+      {valor.map((actual, i) => {
+        const conocido = opciones.some((o) => o.valor === actual);
+        return (
+          <div key={i} className="flex items-center gap-2">
+            <select
+              value={conocido ? actual : ''}
+              onChange={(e) => cambiar(i, e.target.value)}
+              className="h-10 flex-1 rounded-suave border border-ceniza bg-papel px-3 text-sm text-tinta outline-none focus:border-tinta"
+            >
+              <option value="">Sin elegir</option>
+              {!conocido && actual !== '' && (
+                // Un valor que la web ya no reconoce se sigue enseñando marcado
+                // como tal, en vez de borrarlo en silencio.
+                <option value={actual}>{actual} (la web no lo reconoce)</option>
+              )}
+              {opciones.map((o) => (
+                <option key={o.valor} value={o.valor}>
+                  {o.etiqueta}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => alCambiar(valor.filter((_, j) => j !== i))}
+              aria-label="Quitar"
+              title="Quitar"
+              className="grid h-10 w-9 place-items-center rounded-suave text-humo transicion-natural hover:bg-cinabrio/10 hover:text-cinabrio"
+            >
+              ✕
+            </button>
+          </div>
+        );
+      })}
+
+      <button
+        type="button"
+        onClick={() => alCambiar([...valor, ''])}
+        className="h-9 rounded-suave border border-dashed border-ceniza px-3 text-xs text-grafito transicion-natural hover:border-grafito hover:text-tinta"
+      >
+        + Añadir
+      </button>
+    </div>
+  );
+};
+
+/**
+ * Qué opciones tiene una lista, si es de las que hay que elegir.
+ *
+ * `iconos` son dibujos del juego de la web. `categorias` son las claves de los
+ * filtros que el propio bloque define en `opcionesFiltro`: se leen de ahí, así
+ * que si alguien añade un filtro nuevo aparece solo.
+ */
+export const opcionesDeLista = (
+  nombre: string,
+  documento?: Record<string, unknown>,
+): { opciones: { valor: string; etiqueta: string }[]; ayuda: string } | null => {
+  if (nombre === 'iconos') {
+    const iconos = opcionesDeCampo('icono');
+    return iconos ? { opciones: iconos, ayuda: 'Dibujos del juego de la web.' } : null;
+  }
+  if (nombre === 'categorias' && documento) {
+    const filtros = documento.opcionesFiltro;
+    if (Array.isArray(filtros)) {
+      const opciones = filtros
+        .filter((f): f is { clave: string; etiqueta: string } =>
+          f !== null && typeof f === 'object' && typeof (f as { clave?: unknown }).clave === 'string',
+        )
+        .filter((f) => f.clave !== '')
+        .map((f) => ({ valor: f.clave, etiqueta: f.etiqueta || f.clave }));
+      if (opciones.length > 0) {
+        return { opciones, ayuda: 'De los filtros de esta misma sección.' };
+      }
+    }
+  }
+  return null;
 };

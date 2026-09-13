@@ -324,6 +324,7 @@ export const PaginaContenidoSitio = () => {
                                   nombre={clave}
                                   valor={borrador[clave]}
                                   baseDelSitio={baseDelSitio}
+                                  documentoRaiz={borrador}
                                   alCambiar={(nuevo) =>
                                     asignarBorrador((previo) =>
                                       previo ? { ...previo, [clave]: nuevo } : previo,
