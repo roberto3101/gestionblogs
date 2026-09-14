@@ -18,7 +18,12 @@ import {
   useResumenBloques,
 } from '../../ganchos/useBloques';
 import { documentoVigente, type DocumentoBloque } from '../../contratos/bloque';
-import { coleccionPorRuta, pesoLegible, type Coleccion } from '../../contratos/colecciones';
+import {
+  coleccionPorRuta,
+  extensionDe,
+  pesoLegible,
+  type Coleccion,
+} from '../../contratos/colecciones';
 import { CampoDocumento } from '../../componentes/bloques/CampoDocumento';
 import { PanelDividido } from '@compartido/interfaz/disposicion/PanelDividido';
 import { usarAnchoCompleto } from '@plataforma/caparazon/disposicion/contextoAnchoPanel';
@@ -225,9 +230,7 @@ export const PaginaColeccion = () => {
       if (!previo) return previo;
       const siguiente = { ...previo };
       if (regla.formato && regla.formato in siguiente) {
-        const extension = (subido.formato || subido.nombre.split('.').pop() || '')
-          .toLowerCase()
-          .replace(/^\./, '');
+        const extension = extensionDe(subido.nombre, subido.formato);
         if (extension) siguiente[regla.formato] = extension;
       }
       if (regla.peso && regla.peso in siguiente) {

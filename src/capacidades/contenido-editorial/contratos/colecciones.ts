@@ -112,6 +112,22 @@ export const colecciones: Coleccion[] = [
 export const coleccionPorRuta = (ruta: string): Coleccion | undefined =>
   colecciones.find((c) => c.ruta === ruta);
 
+/**
+ * Con qué palabra se nombra un archivo: «pdf», «xlsx», «zip».
+ *
+ * El servidor devuelve el tipo como lo entienden los navegadores
+ * (`application/pdf`), que no es lo que nadie quiere leer en una tarjeta de
+ * descarga. Manda el nombre del archivo, que es donde está la palabra de
+ * verdad; el tipo solo se usa si el nombre venía sin extensión.
+ */
+export const extensionDe = (nombre: string, tipo: string): string => {
+  const delNombre = /\.([a-z0-9]{1,5})$/i.exec(nombre.trim());
+  if (delNombre) return delNombre[1].toLowerCase();
+  const cola = (tipo || '').toLowerCase().split('/').pop() ?? '';
+  // «vnd.openxmlformats-…-spreadsheetml.sheet» y compañía no son palabras.
+  return /^[a-z0-9]{1,5}$/.test(cola) ? cola : '';
+};
+
 /** «2411724» -> «2,4 MB», como lo escribiría una persona. */
 export const pesoLegible = (bytes: number): string => {
   if (!Number.isFinite(bytes) || bytes <= 0) return '';
