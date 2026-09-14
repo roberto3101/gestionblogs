@@ -69,6 +69,9 @@ const PANTALLAS: { clave: Tamano; nombre: string; ancho: number }[] = [
 const anchoDe = (tamano: Tamano): number =>
   PANTALLAS.find((p) => p.clave === tamano)?.ancho ?? 1280;
 
+/** Lo que ocupa de alto dentro del panel. A pantalla completa manda la ventana. */
+const ALTO_EN_EL_PANEL = '70vh';
+
 export const VistaPrevia = ({
   codigoSitio,
   baseDelSitio,
@@ -327,10 +330,24 @@ export const VistaPrevia = ({
         </p>
       )}
 
+      {/*
+        El hueco tiene un alto propio, no uno que salga de lo que lleva dentro.
+        Esto no es una manía: el alto del marco se calcula midiendo este hueco,
+        así que si el hueco creciera con su contenido cada uno dependería del
+        otro. Al volver de la pantalla completa el marco conservaba el alto de
+        la pantalla, el hueco se estiraba hasta los mil píxeles y la vista
+        previa se quedaba deformada hasta recargar.
+
+        Dentro del panel manda la medida fija; a pantalla completa, lo que
+        sobra de la ventana.
+      */}
       <div
         ref={hueco}
-        className="relative flex-1 bg-lienzo overflow-auto"
-        style={pantallaCompleta ? undefined : { height: '70vh' }}
+        className={unirClases(
+          'relative bg-lienzo overflow-auto',
+          pantallaCompleta ? 'min-h-0 flex-1' : 'shrink-0 grow-0',
+        )}
+        style={pantallaCompleta ? undefined : { height: ALTO_EN_EL_PANEL }}
       >
         {cargando && (
           <p className="absolute inset-0 flex items-center justify-center text-sm text-humo">
@@ -344,10 +361,7 @@ export const VistaPrevia = ({
         */}
         <div
           className="mx-auto"
-          style={{
-            width: Math.round(anchoDe(tamano) * escala),
-            height: Math.round(altoDelMarco / escala) * escala,
-          }}
+          style={{ width: Math.round(anchoDe(tamano) * escala), height: altoDelMarco }}
         >
           <iframe
             ref={marco}

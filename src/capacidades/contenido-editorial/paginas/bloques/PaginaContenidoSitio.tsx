@@ -206,6 +206,26 @@ export const PaginaContenidoSitio = () => {
         descripcion="Cambia lo que quieras y guárdalo. La web no cambia hasta que pulses Publicar."
         acciones={
           <>
+            {/*
+              Enseñar y esconder la web, desde arriba.
+              Antes solo se podía desde el pie del trozo abierto: quien cerraba
+              la vista previa —o salía de la pantalla completa y luego la
+              cerraba— se quedaba sin ninguna forma visible de recuperarla.
+            */}
+            {baseDelSitio && (
+              <Boton
+                tono="discreto"
+                onClick={() => asignarVerWeb((v) => !v)}
+                disabled={claveAbierta === null}
+                title={
+                  claveAbierta === null
+                    ? 'Abre un trozo de la página y la web aparece al lado'
+                    : undefined
+                }
+              >
+                {verWeb ? 'Ocultar la web' : 'Ver la web'}
+              </Boton>
+            )}
             {pendientes.length > 0 && (
               <Boton
                 tono="discreto"
