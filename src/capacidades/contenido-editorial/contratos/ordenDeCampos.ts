@@ -45,6 +45,7 @@ export const ordenDeCampos: Record<string, string[]> = {
   'nosotros/historia': ['imagen', 'textoAlternativo', 'titulo', 'subtitulo', 'texto', 'accion', 'palabrasSede', 'mision', 'vision'],
   'nosotros/llamada': ['textoAlternativo', 'titulo', 'texto', 'accionPrincipal', 'accionSecundaria', 'palabrasLaterales'],
   'nosotros/metadatos': ['titulo', 'descripcion', 'palabrasClave'],
+  'nosotros/proyectos': ['titulo', 'subtitulo', 'elementos'],
   'nosotros/portada': ['textoAlternativo', 'antetitulo', 'lineasTitulo', 'entradilla', 'cita', 'palabrasLaterales', 'palabrasLateralesEco'],
   'nosotros/valores': ['imagen', 'titulo', 'subtitulo', 'elementos', 'cita', 'autorCita', 'textoAlternativoCita'],
   'recursos/articulos': ['titulo', 'subtitulo', 'verTodos', 'elementos', 'ambitos'],

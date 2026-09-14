@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { ATRIBUTO_VALOR } from './campoEnfocado';
 import { Boton } from '@compartido/interfaz/primitivas/Boton';
 import { useSitioActivo } from '@plataforma/contexto/contextoSitioActivo';
-import { subirArchivo } from '../../servicios/servicioSubidaArchivos';
+import { subirArchivo, type ArchivoSubido } from '../../servicios/servicioSubidaArchivos';
 
 /**
  * Campo para fotos, vídeos y documentos.
@@ -23,6 +23,12 @@ interface Propiedades {
   alCambiar: (nuevo: string) => void;
   /** Dirección de la web, para mostrar las fotos que aún viven en el sitio. */
   baseDelSitio: string;
+  /**
+   * Lo que se sabe del archivo recién subido: su nombre, su formato y lo que
+   * pesa. Sirve para que quien sube un PDF no tenga que escribir a mano «pdf»
+   * y «2,4 MB» en dos casillas de al lado.
+   */
+  alSubir?: (subido: ArchivoSubido) => void;
 }
 
 const ACEPTA: Record<Clase, string> = {
@@ -56,7 +62,14 @@ const nombreVisible = (valor: string): string => {
   return trozos[trozos.length - 1] || limpio;
 };
 
-export const CampoArchivo = ({ etiqueta, clase, valor, alCambiar, baseDelSitio }: Propiedades) => {
+export const CampoArchivo = ({
+  etiqueta,
+  clase,
+  valor,
+  alCambiar,
+  baseDelSitio,
+  alSubir,
+}: Propiedades) => {
   const { sitioActivo } = useSitioActivo();
   const entrada = useRef<HTMLInputElement>(null);
   const [subiendo, asignarSubiendo] = useState(false);
@@ -75,6 +88,7 @@ export const CampoArchivo = ({ etiqueta, clase, valor, alCambiar, baseDelSitio }
     try {
       const subido = await subirArchivo(archivo, sitioActivo?.id);
       alCambiar(subido.url);
+      alSubir?.(subido);
     } catch (error) {
       asignarFallo(
         error instanceof Error

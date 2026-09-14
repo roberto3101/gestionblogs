@@ -45,9 +45,29 @@ interface Propiedades {
   alCerrar: () => void;
 }
 
-type Tamano = 'movil' | 'escritorio';
+/**
+ * Anchos de pantalla con los que se puede mirar la web.
+ *
+ * Esto no era decorativo: el marco pedía 1280 px pero se le ponía un tope del
+ * 100 % del hueco, y en la columna del panel ese hueco son unos 420. La web
+ * recibía 420 px de ancho y dibujaba su versión de móvil, así que «Ordenador»
+ * y «Móvil» se veían casi igual.
+ *
+ * Ahora el marco se hace de verdad del ancho elegido y se encoge entero con
+ * una escala, como una maqueta. La página cree que está en una pantalla de
+ * 1280 y se comporta como tal, aunque quepa en un hueco más estrecho.
+ */
+type Tamano = 'movil' | 'tableta' | 'escritorio' | 'ancho';
 
-const ANCHOS: Record<Tamano, number> = { movil: 390, escritorio: 1280 };
+const PANTALLAS: { clave: Tamano; nombre: string; ancho: number }[] = [
+  { clave: 'movil', nombre: 'Móvil', ancho: 390 },
+  { clave: 'tableta', nombre: 'Tablet', ancho: 834 },
+  { clave: 'escritorio', nombre: 'Ordenador', ancho: 1280 },
+  { clave: 'ancho', nombre: 'Pantalla grande', ancho: 1600 },
+];
+
+const anchoDe = (tamano: Tamano): number =>
+  PANTALLAS.find((p) => p.clave === tamano)?.ancho ?? 1280;
 
 export const VistaPrevia = ({
   codigoSitio,
@@ -60,7 +80,11 @@ export const VistaPrevia = ({
   respaldoEnfocado,
 }: Propiedades) => {
   const marco = useRef<HTMLIFrameElement>(null);
+  const hueco = useRef<HTMLDivElement>(null);
   const [tamano, asignarTamano] = useState<Tamano>('escritorio');
+  // Lo que mide el hueco donde cabe la maqueta. Se mide en vez de suponerlo
+  // porque el panel cambia de anchura al plegar el menú o al girar la tableta.
+  const [medida, asignarMedida] = useState({ ancho: 0, alto: 0 });
   const [cargando, asignarCargando] = useState(true);
   const [bloqueada, asignarBloqueada] = useState(false);
   // Si se puede señalar en la página lo que se está cambiando.
@@ -187,6 +211,35 @@ export const VistaPrevia = ({
     return () => clearTimeout(aviso);
   }, [direccion]);
 
+  /*
+   * Cuánto hay que encoger la maqueta para que quepa.
+   *
+   * Se mide el hueco de verdad, no la ventana: la vista previa vive en una
+   * columna que cambia de ancho al plegar el menú, al girar una tableta o al
+   * pasar a pantalla completa.
+   */
+  useEffect(() => {
+    const nodo = hueco.current;
+    if (!nodo) return;
+    const medir = () =>
+      asignarMedida({ ancho: nodo.clientWidth, alto: nodo.clientHeight });
+    medir();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', medir);
+      return () => window.removeEventListener('resize', medir);
+    }
+    const vigia = new ResizeObserver(medir);
+    vigia.observe(nodo);
+    return () => vigia.disconnect();
+  }, [pantallaCompleta]);
+
+  const anchoElegido = anchoDe(tamano);
+  // Nunca se agranda: una pantalla de móvil no se estira hasta llenar el hueco,
+  // porque entonces dejaría de parecerse a un móvil.
+  const escala = medida.ancho > 0 ? Math.min(1, medida.ancho / anchoElegido) : 1;
+  const altoDelMarco = medida.alto > 0 ? medida.alto : 520;
+  const porcentaje = Math.round(escala * 100);
+
   // Escape sale de la pantalla completa, que es lo que espera cualquiera.
   useEffect(() => {
     if (!pantallaCompleta) return;
@@ -209,22 +262,28 @@ export const VistaPrevia = ({
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-ceniza bg-lienzo">
         <span className="meta-tipografia text-grafito">Así se va a ver</span>
 
-        <div className="flex items-center gap-1 ml-auto">
-          {(['escritorio', 'movil'] as Tamano[]).map((t) => (
+        <div className="flex flex-wrap items-center gap-1 ml-auto">
+          {PANTALLAS.map((p) => (
             <button
-              key={t}
+              key={p.clave}
               type="button"
-              onClick={() => asignarTamano(t)}
+              onClick={() => asignarTamano(p.clave)}
+              title={`Ver la web como en una pantalla de ${p.ancho} píxeles de ancho`}
               className={unirClases(
                 'h-7 px-2.5 rounded-suave text-xs border transition-colors',
-                t === tamano
+                p.clave === tamano
                   ? 'bg-tinta text-lienzo border-tinta'
                   : 'bg-papel text-grafito border-ceniza hover:border-humo',
               )}
             >
-              {t === 'movil' ? 'Móvil' : 'Ordenador'}
+              {p.nombre}
             </button>
           ))}
+          {/* Se dice a qué tamaño se está mirando y cuánto se ha encogido: sin
+              esto, una maqueta al 33 % parece que la web tiene la letra pequeña. */}
+          <span className="meta-tipografia text-xs text-humo px-1 whitespace-nowrap">
+            {anchoElegido} px{porcentaje < 100 ? ` · ${porcentaje} %` : ''}
+          </span>
           <button
             type="button"
             onClick={() => asignarPantallaCompleta((v) => !v)}
@@ -269,6 +328,7 @@ export const VistaPrevia = ({
       )}
 
       <div
+        ref={hueco}
         className="relative flex-1 bg-lienzo overflow-auto"
         style={pantallaCompleta ? undefined : { height: '70vh' }}
       >
@@ -277,18 +337,29 @@ export const VistaPrevia = ({
             Cargando la web…
           </p>
         )}
+        {/*
+          El hueco de fuera se queda con el tamaño ya encogido, para que no
+          sobre espacio ni aparezca una barra de desplazamiento de más; el
+          marco de dentro conserva su ancho de verdad y se escala.
+        */}
         <div
-          className="mx-auto transition-all"
-          style={{ width: ANCHOS[tamano], maxWidth: '100%', height: '100%' }}
+          className="mx-auto"
+          style={{
+            width: Math.round(anchoDe(tamano) * escala),
+            height: Math.round(altoDelMarco / escala) * escala,
+          }}
         >
           <iframe
             ref={marco}
             src={direccion}
             title="Así se va a ver la web"
-            className="w-full border-0 bg-white"
-            // A pantalla completa el marco ocupa todo el alto disponible; si no,
-            // el 70% de la ventana como antes.
-            style={{ height: pantallaCompleta ? '100%' : '70vh' }}
+            className="border-0 bg-white"
+            style={{
+              width: anchoDe(tamano),
+              height: Math.round(altoDelMarco / escala),
+              transform: `scale(${escala})`,
+              transformOrigin: 'top left',
+            }}
             onLoad={() => {
               asignarCargando(false);
               asignarBloqueada(false);

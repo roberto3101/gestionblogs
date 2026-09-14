@@ -16,6 +16,7 @@ import { PaginaCrearPost } from '@capacidades/contenido-editorial/paginas/posts/
 import { PaginaDetallePost } from '@capacidades/contenido-editorial/paginas/posts/PaginaDetallePost';
 import { PaginaEditarPost } from '@capacidades/contenido-editorial/paginas/posts/PaginaEditarPost';
 import { PaginaContenidoSitio } from '@capacidades/contenido-editorial/paginas/bloques/PaginaContenidoSitio';
+import { PaginaColeccion } from '@capacidades/contenido-editorial/paginas/colecciones/PaginaColeccion';
 import { PaginaMensajes } from '@capacidades/contenido-editorial/paginas/mensajes/PaginaMensajes';
 
 import { PaginaUsuarios } from '@capacidades/gobierno-acceso/paginas/PaginaUsuarios';
@@ -43,6 +44,9 @@ export const rutasPrivadas = (
     <Route path="posts/:postId" element={<PaginaDetallePost />} />
     <Route path="posts/:postId/editar" element={<PaginaEditarPost />} />
     <Route path="contenido" element={<PaginaContenidoSitio />} />
+    {/* Casos de uso, proyectos, videos y archivos: la misma pantalla,
+        una lista distinta. Ver contratos/colecciones.ts. */}
+    <Route path="listas/:coleccion" element={<PaginaColeccion />} />
     <Route path="mensajes" element={<PaginaMensajes />} />
     <Route path="usuarios" element={<PaginaUsuarios />} />
   </Route>

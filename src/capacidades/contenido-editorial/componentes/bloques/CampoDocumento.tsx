@@ -13,6 +13,7 @@ import {
   nombreDeCampo,
 } from '../../contratos/diccionario';
 import { CampoArchivo } from './CampoArchivo';
+import type { ArchivoSubido } from '../../servicios/servicioSubidaArchivos';
 import { ATRIBUTO_RESUMEN } from './campoEnfocado';
 
 /**
@@ -45,6 +46,12 @@ interface Propiedades {
   documentoRaiz?: Record<string, Valor>;
   /** Direccion de la web, para ver las fotos que aun viven en el sitio. */
   baseDelSitio?: string;
+  /**
+   * Aviso de que se acaba de subir un archivo a este campo, con lo que se sabe
+   * de el. Lo usan las pantallas que guardan al lado el formato y el peso, para
+   * rellenarlos solos en vez de pedirlos a mano.
+   */
+  alSubirArchivo?: (nombre: string, subido: ArchivoSubido) => void;
 }
 
 // Los nombres de campo salen del diccionario, que es donde vive la unica
@@ -93,6 +100,7 @@ export const CampoDocumento = ({
   profundidad = 0,
   baseDelSitio = '',
   documentoRaiz,
+  alSubirArchivo,
 }: Propiedades) => {
   if (typeof valor === 'string') {
     // Fotos, videos y documentos se eligen del ordenador, no se escriben.
@@ -111,6 +119,7 @@ export const CampoDocumento = ({
           valor={valor}
           alCambiar={alCambiar}
           baseDelSitio={baseDelSitio}
+          alSubir={alSubirArchivo ? (subido) => alSubirArchivo(nombre, subido) : undefined}
         />
       );
     }
@@ -254,6 +263,7 @@ export const CampoDocumento = ({
         profundidad={profundidad}
         baseDelSitio={baseDelSitio}
         documentoRaiz={documentoRaiz}
+        alSubirArchivo={alSubirArchivo}
       />
     );
   }
@@ -276,6 +286,7 @@ export const CampoDocumento = ({
             profundidad={profundidad + 1}
             baseDelSitio={baseDelSitio}
             documentoRaiz={documentoRaiz}
+            alSubirArchivo={alSubirArchivo}
             alCambiar={(nuevo) => alCambiar({ ...objeto, [clave]: nuevo })}
           />
         ))}
@@ -294,6 +305,7 @@ const ListaDocumento = ({
   profundidad = 0,
   baseDelSitio = '',
   documentoRaiz,
+  alSubirArchivo,
 }: Propiedades) => {
   const lista = valor as Valor[];
   const [plegados, asignarPlegados] = useState<Record<number, boolean>>({});
@@ -463,6 +475,7 @@ const ListaDocumento = ({
                   profundidad={profundidad + 1}
                   baseDelSitio={baseDelSitio}
                   documentoRaiz={documentoRaiz}
+                  alSubirArchivo={alSubirArchivo}
                   alCambiar={(nuevo) => reemplazarEn(indice, nuevo)}
                 />
               </div>

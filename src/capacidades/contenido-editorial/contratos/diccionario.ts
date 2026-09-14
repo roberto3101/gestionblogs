@@ -291,6 +291,11 @@ export const bloques: Record<string, Bloque> = {
     nombre: 'El equipo',
     descripcion: 'El texto con la foto del equipo trabajando.',
   },
+  'nosotros/proyectos': {
+    orden: 4.5,
+    nombre: 'Nuestros proyectos',
+    descripcion: 'Las fichas de obra con foto y vídeo que se van añadiendo.',
+  },
   'nosotros/cifras': {
     orden: 5,
     nombre: 'Las cifras',
@@ -506,6 +511,7 @@ export const campos: Record<string, string> = {
   producto: 'Producto',
   familia: 'Familia',
   ubicacion: 'Lugar',
+  lugar: 'Lugar',
   sector: 'Sector',
   organizacion: 'Organización',
   empresa: 'Empresa',

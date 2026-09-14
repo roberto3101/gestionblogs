@@ -19,6 +19,10 @@ export const itemsNavegacion: ItemNavegacion[] = [
 
   { ruta: '/panel/contenido', etiqueta: 'Textos y fotos de la web', agrupacion: 'redaccion' },
   { ruta: '/panel/posts', etiqueta: 'Artículos del blog', agrupacion: 'redaccion' },
+  { ruta: '/panel/listas/casos', etiqueta: 'Casos de uso', agrupacion: 'redaccion' },
+  { ruta: '/panel/listas/proyectos', etiqueta: 'Nuestros proyectos', agrupacion: 'redaccion' },
+  { ruta: '/panel/listas/videos', etiqueta: 'Vídeos', agrupacion: 'redaccion' },
+  { ruta: '/panel/listas/archivos', etiqueta: 'Archivos para descargar', agrupacion: 'redaccion' },
   { ruta: '/panel/mensajes', etiqueta: 'Mensajes recibidos', agrupacion: 'redaccion' },
 
   { ruta: '/panel/autores', etiqueta: 'Quién firma los artículos', agrupacion: 'estructura' },
