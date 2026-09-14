@@ -4,10 +4,18 @@ import { useEffect } from 'react';
 import { BarraLateral } from '../navegacion/BarraLateral';
 import { BarraSuperior } from '../navegacion/BarraSuperior';
 import { unirClases } from '@compartido/utilidades/unirClases';
+import { ProveedorAnchoPanel, useAnchoPanel } from './contextoAnchoPanel';
 
-export const DisposicionPanel = () => {
+export const DisposicionPanel = () => (
+  <ProveedorAnchoPanel>
+    <Armazon />
+  </ProveedorAnchoPanel>
+);
+
+const Armazon = () => {
   const [sidebarAbierto, asignarSidebarAbierto] = useState(false);
   const ubicacion = useLocation();
+  const { ancho } = useAnchoPanel();
 
   useEffect(() => {
     asignarSidebarAbierto(false);
@@ -33,7 +41,14 @@ export const DisposicionPanel = () => {
       )}
       <div className="flex flex-col min-h-screen min-w-0">
         <BarraSuperior alAbrirSidebar={() => asignarSidebarAbierto(true)} />
-        <main className="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 max-w-[1180px] w-full mx-auto">
+        <main
+          className={unirClases(
+            'flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-8 w-full mx-auto',
+            // Un formulario se lee mal de punta a punta de un monitor grande;
+            // una web al lado, en cambio, agradece cada pixel.
+            ancho === 'completo' ? 'max-w-[2100px]' : 'max-w-[1180px]',
+          )}
+        >
           <Outlet />
         </main>
       </div>

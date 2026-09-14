@@ -20,6 +20,8 @@ import {
 import { documentoVigente, type DocumentoBloque } from '../../contratos/bloque';
 import { coleccionPorRuta, pesoLegible, type Coleccion } from '../../contratos/colecciones';
 import { CampoDocumento } from '../../componentes/bloques/CampoDocumento';
+import { PanelDividido } from '@compartido/interfaz/disposicion/PanelDividido';
+import { usarAnchoCompleto } from '@plataforma/caparazon/disposicion/contextoAnchoPanel';
 import { VistaPrevia } from '../../componentes/bloques/VistaPrevia';
 import { leerCampoEnfocado } from '../../componentes/bloques/campoEnfocado';
 import { nombreDeCampo } from '../../contratos/diccionario';
@@ -78,6 +80,8 @@ const camposOrdenados = (coleccion: Coleccion, ficha: Ficha): string[] => {
 };
 
 export const PaginaColeccion = () => {
+  // Aqui tambien se puede enseñar la web al lado: ancho completo.
+  usarAnchoCompleto();
   const { coleccion: rutaColeccion } = useParams();
   const coleccion = coleccionPorRuta(rutaColeccion ?? '');
   const { sitioActivo } = useSitioActivo();
@@ -322,12 +326,25 @@ export const PaginaColeccion = () => {
             </div>
           )}
 
-          <div
-            className={unirClases(
-              'grid gap-6',
-              verWeb ? 'xl:grid-cols-[minmax(0,1fr),minmax(0,42%)]' : 'grid-cols-1',
-            )}
-          >
+          <PanelDividido
+            recuerdaComo={`lista-${coleccion.ruta}`}
+            derecha={
+              verWeb ? (
+                <div className="sticky top-6">
+                  <VistaPrevia
+                    codigoSitio={sitioActivo.codigo}
+                    baseDelSitio={baseDelSitio}
+                    ruta={coleccion.paginaWeb}
+                    bloque={coleccion.bloque}
+                    textoEnfocado={textoEnfocado}
+                    respaldoEnfocado={respaldoEnfocado}
+                    sustituciones={[]}
+                    alCerrar={() => asignarVerWeb(false)}
+                  />
+                </div>
+              ) : null
+            }
+            izquierda={
             <div className="min-w-0">
               {lista.length === 0 ? (
                 <EstadoVacio
@@ -436,22 +453,8 @@ export const PaginaColeccion = () => {
                 </ul>
               )}
             </div>
-
-            {verWeb && (
-              <div className="min-w-0 xl:sticky xl:top-6 xl:self-start">
-                <VistaPrevia
-                  codigoSitio={sitioActivo.codigo}
-                  baseDelSitio={baseDelSitio}
-                  ruta={coleccion.paginaWeb}
-                  bloque={coleccion.bloque}
-                  textoEnfocado={textoEnfocado}
-                  respaldoEnfocado={respaldoEnfocado}
-                  sustituciones={[]}
-                  alCerrar={() => asignarVerWeb(false)}
-                />
-              </div>
-            )}
-          </div>
+            }
+          />
         </>
       )}
 

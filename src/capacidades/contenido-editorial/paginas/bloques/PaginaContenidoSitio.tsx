@@ -34,6 +34,8 @@ import {
   paginas,
 } from '../../contratos/diccionario';
 import { DialogoConfirmacion } from '@compartido/interfaz/retroalimentacion/DialogoConfirmacion';
+import { PanelDividido } from '@compartido/interfaz/disposicion/PanelDividido';
+import { usarAnchoCompleto } from '@plataforma/caparazon/disposicion/contextoAnchoPanel';
 
 /**
  * Edición de los textos y las fotos de la web.
@@ -78,6 +80,8 @@ function textosCambiados(
 }
 
 export const PaginaContenidoSitio = () => {
+  // Esta pagina enseña la web al lado: le hace falta la pantalla entera.
+  usarAnchoCompleto();
   const { sitioActivo } = useSitioActivo();
   const resumen = useResumenBloques(sitioActivo?.id ?? null);
 
@@ -261,12 +265,25 @@ export const PaginaContenidoSitio = () => {
       {consulta.isLoading ? (
         <Cargando />
       ) : (
-        <div
-          className={unirClases(
-            'grid gap-6 items-start',
-            mostrarPrevia ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,46%)]' : 'grid-cols-1',
-          )}
-        >
+        <PanelDividido
+          recuerdaComo="contenido"
+          derecha={
+            mostrarPrevia ? (
+              <div className="sticky top-6">
+                <VistaPrevia
+                  textoEnfocado={textoEnfocado}
+                  respaldoEnfocado={respaldoEnfocado}
+                  codigoSitio={sitioActivo.codigo}
+                  baseDelSitio={baseDelSitio}
+                  ruta={rutaPrevia}
+                  bloque={claveAbierta ?? ''}
+                  sustituciones={sustituciones}
+                  alCerrar={() => asignarVerWeb(false)}
+                />
+              </div>
+            ) : null
+          }
+          izquierda={
           <div className="flex flex-col gap-8 min-w-0">
             {porPagina.map(({ pagina, lista }) => (
               <section key={pagina.prefijo}>
@@ -436,22 +453,8 @@ export const PaginaContenidoSitio = () => {
               </section>
             ))}
           </div>
-
-          {mostrarPrevia && (
-            <div className="xl:sticky xl:top-6">
-              <VistaPrevia
-                textoEnfocado={textoEnfocado}
-                respaldoEnfocado={respaldoEnfocado}
-                codigoSitio={sitioActivo.codigo}
-                baseDelSitio={baseDelSitio}
-                ruta={rutaPrevia}
-                bloque={claveAbierta ?? ''}
-                sustituciones={sustituciones}
-                alCerrar={() => asignarVerWeb(false)}
-              />
-            </div>
-          )}
-        </div>
+          }
+        />
       )}
 
       <DialogoConfirmacion
