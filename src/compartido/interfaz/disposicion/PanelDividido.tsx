@@ -126,8 +126,20 @@ export const PanelDividido = ({
     if (!arrastre.current) return;
     arrastre.current = false;
     asignarArrastrando(false);
-    if (anchoDerecha !== null) recordar(recuerdaComo, anchoDerecha);
   };
+
+  /*
+   * El reparto se apunta solo, poco despues de dejar de moverlo.
+   *
+   * Antes se apuntaba al soltar el raton, y por eso las flechas del teclado no
+   * se recordaban. Asi vale para las dos maneras de moverlo y no se escribe en
+   * el disco en cada pixel del arrastre.
+   */
+  useEffect(() => {
+    if (anchoDerecha === null) return;
+    const reloj = setTimeout(() => recordar(recuerdaComo, anchoDerecha), 300);
+    return () => clearTimeout(reloj);
+  }, [anchoDerecha, recuerdaComo]);
 
   /*
    * Mientras se arrastra se escucha en la ventana entera.
@@ -161,7 +173,8 @@ export const PanelDividido = ({
     );
   }
 
-  const ancho = limitar(anchoDerecha ?? Math.round(anchoTotal * 0.55));
+  const anchoInicial = Math.round(anchoTotal * 0.55);
+  const ancho = limitar(anchoDerecha ?? anchoInicial);
 
   return (
     <div ref={contenedor} className="flex items-start">
@@ -183,29 +196,21 @@ export const PanelDividido = ({
         onPointerCancel={alSoltar}
         onDoubleClick={() => {
           // Volver al reparto de fábrica sin tener que afinar con el ratón.
-          const inicial = Math.round(anchoTotal * 0.55);
-          asignarAnchoDerecha(limitar(inicial));
-          recordar(recuerdaComo, inicial);
+          asignarAnchoDerecha(limitar(Math.round(anchoTotal * 0.55)));
         }}
         onKeyDown={(evento) => {
           const salto = evento.shiftKey ? 80 : 24;
-          if (evento.key === 'ArrowLeft') {
-            evento.preventDefault();
-            const nuevo = limitar(ancho + salto);
-            asignarAnchoDerecha(nuevo);
-            recordar(recuerdaComo, nuevo);
-          }
-          if (evento.key === 'ArrowRight') {
-            evento.preventDefault();
-            const nuevo = limitar(ancho - salto);
-            asignarAnchoDerecha(nuevo);
-            recordar(recuerdaComo, nuevo);
-          }
+          const hacia =
+            evento.key === 'ArrowLeft' ? salto : evento.key === 'ArrowRight' ? -salto : 0;
+          if (hacia === 0) return;
+          evento.preventDefault();
+          // Sumando sobre lo anterior, no sobre lo que hubiera al dibujar: dos
+          // flechas seguidas mueven el doble, y no una sola vez.
+          asignarAnchoDerecha((previo) => limitar((previo ?? anchoInicial) + hacia));
         }}
-        className={unirClases(
-          'group relative mx-1 shrink-0 cursor-col-resize self-stretch rounded-full outline-none',
-          'w-2 touch-none',
-        )}
+        /* Ancha para el ratón, fina para el ojo: agarrar ocho píxeles con el
+           ratón es un ejercicio de puntería que nadie ha pedido. */
+        className="group relative mx-0.5 w-3.5 shrink-0 cursor-col-resize touch-none self-stretch rounded-full outline-none" 
       >
         {/* La línea se ve poco hasta que el ratón se acerca: está ahí para
             usarla, no para llamar la atención. */}
