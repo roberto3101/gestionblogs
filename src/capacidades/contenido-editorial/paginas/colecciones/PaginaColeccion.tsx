@@ -11,6 +11,7 @@ import { useSitioActivo } from '@plataforma/contexto/contextoSitioActivo';
 import { unirClases } from '@compartido/utilidades/unirClases';
 import { urlDeLaWeb } from '@compartido/constantes/sitiosProduccion';
 import {
+  useDescartarBorrador,
   useGuardarBloque,
   useListarBloques,
   usePublicarBloques,
@@ -93,11 +94,15 @@ export const PaginaColeccion = () => {
   const consulta = useListarBloques(sitioActivo?.id ?? null, idioma);
   const guardado = useGuardarBloque(sitioActivo?.id ?? null);
   const publicacion = usePublicarBloques(sitioActivo?.id ?? null);
+  const descarte = useDescartarBorrador(sitioActivo?.id ?? null);
 
   // Cuál se está editando: su posición en la lista, o null si ninguna.
   const [editando, asignarEditando] = useState<number | null>(null);
   const [borrador, asignarBorrador] = useState<Ficha | null>(null);
   const [porQuitar, asignarPorQuitar] = useState<number | null>(null);
+  // Deshacer todo lo guardado sin publicar: se pregunta antes, porque se
+  // pierde el trabajo de varias fichas de una vez.
+  const [porDeshacer, asignarPorDeshacer] = useState(false);
   const [verWeb, asignarVerWeb] = useState(false);
   const [textoEnfocado, asignarTextoEnfocado] = useState('');
   const [respaldoEnfocado, asignarRespaldoEnfocado] = useState('');
@@ -296,6 +301,14 @@ export const PaginaColeccion = () => {
               <p className="text-sm text-grafito flex-1 min-w-[12rem]">
                 Los cambios están guardados, pero la web sigue como estaba.
               </p>
+              <Boton
+                tono="fantasma"
+                tamano="compacto"
+                type="button"
+                onClick={() => asignarPorDeshacer(true)}
+              >
+                Dejarlo como estaba
+              </Boton>
               <Boton
                 type="button"
                 tamano="compacto"
@@ -518,6 +531,22 @@ export const PaginaColeccion = () => {
           </div>
         </div>
       )}
+
+      <DialogoConfirmacion
+        abierto={porDeshacer}
+        titulo="¿Dejarlo como estaba?"
+        mensaje="Se pierden todos los cambios guardados y sin publicar de esta lista. Lo que ya está en la web no se toca."
+        textoConfirmar="Deshacer los cambios"
+        tonoConfirmar="peligro"
+        cargando={descarte.isPending}
+        alConfirmar={() =>
+          descarte.mutate(
+            { idioma, clave: coleccion.bloque },
+            { onSuccess: () => asignarPorDeshacer(false) },
+          )
+        }
+        alCancelar={() => asignarPorDeshacer(false)}
+      />
 
       <DialogoConfirmacion
         abierto={porQuitar !== null}
