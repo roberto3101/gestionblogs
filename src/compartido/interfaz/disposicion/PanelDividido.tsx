@@ -107,7 +107,11 @@ export const PanelDividido = ({
   };
 
   const empezar = (evento: ReactPointerEvent<HTMLDivElement>) => {
+    // Sin esto, pulsar aquí selecciona el texto de los dos lados mientras se
+    // arrastra. Pero cortar el comportamiento normal también corta el foco,
+    // así que se pide a mano: si no, las flechas del teclado no llegan.
     evento.preventDefault();
+    evento.currentTarget.focus();
     arrastre.current = true;
     asignarArrastrando(true);
     try {
