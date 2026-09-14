@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import { unirClases } from '@compartido/utilidades/unirClases';
 
 /**
@@ -55,6 +62,13 @@ export const PanelDividido = ({
   const contenedor = useRef<HTMLDivElement>(null);
   const [anchoTotal, asignarAnchoTotal] = useState(0);
   const [anchoDerecha, asignarAnchoDerecha] = useState<number | null>(null);
+  // Se arrastra o no: en una referencia, no en el estado.
+  //
+  // El estado de React llega en el siguiente repintado, y cuando el raton se
+  // mueve en el mismo suspiro en que se pulsa —o cuando quien mueve el raton es
+  // un programa— el primer «se ha movido» llegaba con la bandera todavia
+  // apagada y el arrastre no empezaba nunca. La referencia se ve al momento.
+  const arrastre = useRef(false);
   const [arrastrando, asignarArrastrando] = useState(false);
 
   useEffect(() => {
@@ -92,10 +106,47 @@ export const PanelDividido = ({
     asignarAnchoDerecha(limitar(caja.right - clienteX));
   };
 
+  const empezar = (evento: ReactPointerEvent<HTMLDivElement>) => {
+    evento.preventDefault();
+    arrastre.current = true;
+    asignarArrastrando(true);
+    try {
+      evento.currentTarget.setPointerCapture(evento.pointerId);
+    } catch {
+      // Un navegador que no deja capturar el puntero sigue funcionando: los
+      // oyentes de la ventana recogen el movimiento igual.
+    }
+  };
+
   const alSoltar = () => {
+    if (!arrastre.current) return;
+    arrastre.current = false;
     asignarArrastrando(false);
     if (anchoDerecha !== null) recordar(recuerdaComo, anchoDerecha);
   };
+
+  /*
+   * Mientras se arrastra se escucha en la ventana entera.
+   *
+   * Si solo se escuchara en la barra, sacar el raton de ella —cosa que pasa en
+   * cuanto uno va rapido— dejaria el arrastre a medias y la barra pegada al
+   * puntero.
+   */
+  useEffect(() => {
+    if (!arrastrando) return;
+    const alMover = (evento: PointerEvent) => {
+      evento.preventDefault();
+      mover(evento.clientX);
+    };
+    window.addEventListener('pointermove', alMover);
+    window.addEventListener('pointerup', alSoltar);
+    window.addEventListener('pointercancel', alSoltar);
+    return () => {
+      window.removeEventListener('pointermove', alMover);
+      window.removeEventListener('pointerup', alSoltar);
+      window.removeEventListener('pointercancel', alSoltar);
+    };
+  });
 
   if (!partido) {
     return (
@@ -118,12 +169,9 @@ export const PanelDividido = ({
         aria-label="Repartir el espacio entre lo que editas y la web"
         tabIndex={0}
         title="Arrástrala para hacer la web más grande o más pequeña"
-        onPointerDown={(evento) => {
-          evento.currentTarget.setPointerCapture(evento.pointerId);
-          asignarArrastrando(true);
-        }}
+        onPointerDown={empezar}
         onPointerMove={(evento) => {
-          if (!arrastrando) return;
+          if (!arrastre.current) return;
           evento.preventDefault();
           mover(evento.clientX);
         }}
