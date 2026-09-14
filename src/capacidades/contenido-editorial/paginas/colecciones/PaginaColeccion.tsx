@@ -112,6 +112,20 @@ export const PaginaColeccion = () => {
 
   const baseDelSitio = urlDeLaWeb(sitioActivo?.codigo ?? '');
 
+  /*
+   * De donde se saca la forma de una ficha nueva.
+   *
+   * Normalmente, de la primera que haya. Si se han quitado todas, se mira lo
+   * que hay publicado: sin esto, borrar la ultima dejaria la seccion sin
+   * manera de volver a empezar.
+   */
+  const molde = useMemo<unknown>(() => {
+    if (lista.length > 0) return lista[0];
+    if (!bloque || !coleccion) return undefined;
+    const publicada = (bloque.datos as DocumentoBloque)[coleccion.lista];
+    return Array.isArray(publicada) ? publicada[0] : undefined;
+  }, [lista, bloque, coleccion]);
+
   if (!coleccion) {
     return <EstadoVacio titulo="Esa lista no existe" descripcion="Elige una del menú." />;
   }
@@ -155,7 +169,6 @@ export const PaginaColeccion = () => {
   };
 
   const anadir = () => {
-    const molde = lista[0];
     if (molde === undefined) return;
     asignarEditando(lista.length);
     asignarBorrador(fichaEnBlanco(molde));
@@ -261,7 +274,7 @@ export const PaginaColeccion = () => {
             >
               {verWeb ? 'Ocultar la web' : 'Ver la web'}
             </Boton>
-            <Boton type="button" tamano="compacto" onClick={anadir} disabled={lista.length === 0}>
+            <Boton type="button" tamano="compacto" onClick={anadir} disabled={molde === undefined}>
               Añadir {coleccion.unaDeEstas}
             </Boton>
           </div>
@@ -306,7 +319,18 @@ export const PaginaColeccion = () => {
               {lista.length === 0 ? (
                 <EstadoVacio
                   titulo={`Todavía no hay ${coleccion.nombre.toLowerCase()}`}
-                  descripcion="No se puede añadir la primera desde aquí: hace falta una ficha de ejemplo en la web para saber qué campos lleva."
+                  descripcion={
+                    molde === undefined
+                      ? 'Para poder crear la primera hace falta una ficha de ejemplo en la web, que diga qué campos lleva.'
+                      : `Pulsa «Añadir ${coleccion.unaDeEstas}» para empezar.`
+                  }
+                  accion={
+                    molde === undefined ? undefined : (
+                      <Boton type="button" onClick={anadir}>
+                        Añadir {coleccion.unaDeEstas}
+                      </Boton>
+                    )
+                  }
                 />
               ) : (
                 <ul className="grid gap-4 sm:grid-cols-2">
